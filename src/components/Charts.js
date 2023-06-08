@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Papa from "papaparse";
 import Plot from "react-plotly.js";
 
@@ -7,19 +7,14 @@ export default function Charts() {
   const [xValues, setxValues] = useState([]);
   const [yValues, setyValues] = useState([]);
   const [zValues, setzValues] = useState([]);
+  const [xRange, setXRange] = useState([]);
   const [videoSource, setVideoSource] = useState(null);
 
-  var windowSize = 100000;
   const updateChart = (results) => {
-    // Extract data from the parsed results
     const chartData = results.data;
-    // Extract values for x-axis and y-axis
-    // const xValues = chartData.map((d) => d.x_accel);
     setxValues(chartData.map((d) => d.x_accel));
-    // yValues = chartData.map((d) => d.y_accel);
     setyValues(chartData.map((d) => d.y_accel));
     setzValues(chartData.map((d) => d.z_accel));
-    // timestamps = chartData.map((data) => new Date(data.time).getTime());
     setTimeStamp(
       unixEpochToDateTime(
         chartData.map((data) => new Date(data.time).getTime())
@@ -112,29 +107,7 @@ export default function Charts() {
     popup.style.display = "none";
   }
 
-  function unixEpochToDateTime(timestamp) {
-    const date = new Date(timestamp * 1000); // Multiply by 1000 to convert from seconds to milliseconds
-
-    // Extract the date and time components
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1; // Months are zero-based, so add 1
-    const day = date.getDate();
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const seconds = date.getSeconds();
-
-    // Format the components as a human-readable date and time string
-    const dateTimeString = `${year}-${month.toString().padStart(2, "0")}-${day
-      .toString()
-      .padStart(2, "0")} ${hours.toString().padStart(2, "0")}:${minutes
-      .toString()
-      .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-    debugger;
-    return dateTimeString;
-  }
-
   const handleClickX = (event) => {
-    unixEpochToDateTime(0);
     showPopup("X", event.points[0].x, event.points[0].y);
     console.log(event.points[0].x);
     console.log(event.points[0].y);
@@ -199,14 +172,27 @@ export default function Charts() {
     downloadLink.click();
   }
 
-  function graphclicked(event) {
-    console.log(event);
-  }
-
   const handleVideoChange = (event) => {
     const file = event.target.files[0];
     const videoURL = URL.createObjectURL(file);
     setVideoSource(videoURL);
+  };
+
+  function unixEpochToDateTime(timestamp) {
+    let timeString = timestamp.map((time) => {
+      let unixTime = time;
+      return new Date(unixTime);
+    });
+    return timeString;
+  }
+
+  const handleRelayout = (event) => {
+    // Update the x-axis range when panning
+    if (event["xaxis.range[0]"]) {
+      let start = event["xaxis.range[0]"];
+      let end = event["xaxis.range[1]"];
+      setXRange([new Date(start), new Date(end)]);
+    }
   };
 
   return (
@@ -214,7 +200,7 @@ export default function Charts() {
       <div>
         <div className="my-3  d-flex justify-content-center">
           <button
-            class="btn btn-primary "
+            className="btn btn-primary "
             style={{ display: "block" }}
             onClick={() => document.getElementById("getCSVFile").click()}
           >
@@ -229,9 +215,9 @@ export default function Charts() {
             style={{ display: "none", margin: "10px auto" }}
           />
         </div>
-        <div className=" d-flex justify-content-center">
+        <div className=" d-flex justify-content-center my-3">
           <button
-            class="btn btn-primary"
+            className="btn btn-primary"
             style={{ display: "block" }}
             onClick={() => document.getElementById("getVideoFile").click()}
           >
@@ -258,7 +244,6 @@ export default function Charts() {
             </div>
             <div className="chart-container">
               <Plot
-                id="chart"
                 data={[
                   {
                     x: timestamps,
@@ -272,17 +257,62 @@ export default function Charts() {
                   width: 1000,
                   height: 500,
                   hovermode: "closest",
+                  dragmode: "pan",
+                  gridwidth: 0.5,
                   xaxis: {
                     title: "Timestamp(POSIX)",
-                    range: [timestamps[0] - windowSize, timestamps[0]], // Start the chart from the right end
-                    // tickmode: 'date',  // Display each value on the x-axis
+                    type: "date",
                     gridcolor: "lightgray", // Set the color of the grid lines
-                    gridwidth: 0.5,
+                    range: xRange,
+                    rangeslider: {
+                      visible: true,
+                    },
+                    tickformat: "%H:%M:%S", // Specify the custom tick format for "hh:mm:ss"
+                    rangeselector: {
+                      buttons: [
+                        {
+                          count: 5,
+                          label: "5 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 10,
+                          label: "10 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 15,
+                          label: "15 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 30,
+                          label: "30 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 45,
+                          label: "45 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          label: "All",
+                          step: "all",
+                        },
+                      ],
+                    },
                   },
                   yaxis: {
                     title: "Accelerometer X",
+                    fixedrange: true,
                   },
                 }}
+                onRelayout={handleRelayout}
                 onClick={handleClickX}
               />
             </div>
@@ -302,17 +332,62 @@ export default function Charts() {
                   width: 1000,
                   height: 500,
                   hovermode: "closest",
+                  dragmode: "pan",
                   xaxis: {
                     title: "Timestamp(POSIX)",
-                    range: [timestamps[0] - windowSize, timestamps[0]], // Start the chart from the right end
-                    // tickmode: 'date',  // Display each value on the x-axis
+                    type: "date",
                     gridcolor: "lightgray", // Set the color of the grid lines
                     gridwidth: 0.5,
+                    range: xRange,
+                    rangeslider: {
+                      visible: true,
+                    },
+                    tickformat: "%H:%M:%S", // Specify the custom tick format for "hh:mm:ss"
+                    rangeselector: {
+                      buttons: [
+                        {
+                          count: 5,
+                          label: "5 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 10,
+                          label: "10 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 15,
+                          label: "15 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 30,
+                          label: "30 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 45,
+                          label: "45 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          label: "All",
+                          step: "all",
+                        },
+                      ],
+                    },
                   },
                   yaxis: {
                     title: "Accelerometer Y",
+                    fixedrange: true,
                   },
                 }}
+                onRelayout={handleRelayout}
                 onClick={handleClickY}
               />
             </div>
@@ -332,40 +407,89 @@ export default function Charts() {
                   width: 1000,
                   height: 500,
                   hovermode: "closest",
+                  dragmode: "pan",
                   xaxis: {
                     title: "Timestamp(POSIX)",
-                    range: [timestamps[0] - windowSize, timestamps[0]], // Start the chart from the right end
-                    // tickmode: 'date',  // Display each value on the x-axis
+                    type: "date",
                     gridcolor: "lightgray", // Set the color of the grid lines
                     gridwidth: 0.5,
+                    range: xRange,
+                    rangeslider: {
+                      visible: true,
+                    },
+                    tickformat: "%H:%M:%S",
+                    rangeselector: {
+                      buttons: [
+                        {
+                          count: 5,
+                          label: "5 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 10,
+                          label: "10 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 15,
+                          label: "15 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 30,
+                          label: "30 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 45,
+                          label: "45 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          label: "All",
+                          step: "all",
+                        },
+                      ],
+                    },
                   },
                   yaxis: {
+                    fixedrange: true,
                     title: "Accelerometer Z",
                   },
                 }}
+                onRelayout={handleRelayout}
                 onClick={handleClickZ}
               />
             </div>
           </div>
           <div className="annotation-container">
-            <h2>Annotations</h2>
+            <h2 className="text-center mb-3">Annotations</h2>
             <div id="tableContainer">
               <table id="myTable">
-                <tr>
-                  <th> S.No </th>
-                  <th>Axis</th>
-                  <th>Timestamp</th>
-                  <th>Value</th>
-                  <th>Annotation</th>
-                </tr>
+                <tbody>
+                  <tr>
+                    <th> S.No </th>
+                    <th>Axis</th>
+                    <th>Timestamp</th>
+                    <th>Value</th>
+                    <th>Annotation</th>
+                  </tr>
+                </tbody>
               </table>
-              <button
-                id="downloadBtn"
-                onClick={downloadJson}
-                className="buttonD"
-              >
-                Download JSON
-              </button>
+              <div className="text-center my-5">
+                <button
+                  id="downloadBtn"
+                  onClick={downloadJson}
+                  className="buttonD "
+                >
+                  Download JSON
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -6,9 +6,8 @@
 
 .annotation-container {
   background-color: rgba(128, 128, 128, 0.59);
-  padding-left: 10px;
   border-radius: 5px;
-  margin-left: 345px;
+  width: 106vh;
 }
 
 .video-player-container {
