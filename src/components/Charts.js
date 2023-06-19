@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Papa from "papaparse";
 import Plot from "react-plotly.js";
 
@@ -8,7 +8,17 @@ export default function Charts() {
   const [yValues, setyValues] = useState([]);
   const [zValues, setzValues] = useState([]);
   const [xRange, setXRange] = useState([]);
+  const [xAnnotation, setXAnnotation] = useState();
+  const [yAnnotation, setYAnnotation] = useState();
+  const [axis, setAxis] = useState();
+  const [serial, setSerial] = useState(1);
   const [videoSource, setVideoSource] = useState(null);
+  const chart1Ref = useRef(null);
+  const chart2Ref = useRef(null);
+  const chart3Ref = useRef(null);
+  const [annotations, setAnnotations] = useState([]);
+  const [buttonDisabled, setButtonDisabled] = useState(false);
+  const [calTimeDiff, setTimeDiff] = useState(true);
 
   const updateChart = (results) => {
     const chartData = results.data;
@@ -21,6 +31,14 @@ export default function Charts() {
       )
     );
   };
+
+  function unixEpochToDateTime(timestamp) {
+    let timeString = timestamp.map((time) => {
+      let unixTime = time;
+      return new Date(unixTime);
+    });
+    return timeString;
+  }
 
   const changeHandler = (event) => {
     Papa.parse(event.target.files[0], {
@@ -39,52 +57,51 @@ export default function Charts() {
         updateChart(results);
       },
     });
+    setButtonDisabled(true);
   };
-  var xVal = null;
-  var yVal = null;
-  var axisVal = null;
-  var serial = 1;
+  // var xVal = null;
+  // var yVal = null;
+  // var axisVal = null;
 
   // Show the annotation popup
   function showPopup(axis, x, y) {
-    debugger;
     let popup = document.getElementById("popup");
     popup.style.display = "block";
     document.getElementById("xValue").innerHTML = "Timestamp: " + x;
     document.getElementById("yValue").innerHTML = "Value :" + y.toFixed(3);
-    xVal = x;
-    yVal = y;
-    axisVal = axis;
-    // console.log(axisVal);
+    setAxis(axis);
+  }
+
+  function showTimeStartPopup() {
+    let popup = document.getElementById("timepopup");
+    popup.style.display = "block";
   }
 
   function addAnnotation() {
     var annotationInput = document.getElementById("annotation-input");
     var annotation = annotationInput.value;
     if (annotation !== "") {
-      // console.log(axisVal,xVal, yVal, annotation);
-      // create new row
       var row = document.createElement("tr");
-
-      // Create table data cells and set their values
       var serialCell = document.createElement("td");
-
+      setSerial(serial + 1);
       serialCell.textContent = serial;
-      serial = serial + 1;
-      // console.log(axisVal);
       row.appendChild(serialCell);
 
       var axisCell = document.createElement("td");
-      axisCell.textContent = axisVal;
-      // console.log(axisVal);
+      axisCell.textContent = axis;
       row.appendChild(axisCell);
 
       var xCell = document.createElement("td");
-      xCell.textContent = xVal;
+      const [datePart, timePart] = xAnnotation.split(" ");
+
+      const [hours, minutes, seconds] = timePart.split(":");
+
+      xCell.textContent = hours + ":" + minutes + ":" + seconds;
+
       row.appendChild(xCell);
 
       var yCell = document.createElement("td");
-      yCell.textContent = yVal.toFixed(3);
+      yCell.textContent = yAnnotation.toFixed(3);
       row.appendChild(yCell);
 
       var aCell = document.createElement("td");
@@ -94,49 +111,140 @@ export default function Charts() {
       // Append the new row to the table
       document.getElementById("myTable").appendChild(row);
     }
-
-    xVal = null;
-    yVal = null;
+    // xVal = null;
+    // yVal = null;
 
     annotationInput.value = "";
+    hidePopup(false);
+  }
+
+  function changeStartTime() {
+    var annotationInput = document.getElementById("startTime-input");
+    var startTime = annotationInput.value;
+    let origin;
+
+    if (startTime !== "") {
+      for (const dateTime of timestamps) {
+        if (typeof dateTime === "string") {
+          alert("You have already set the starting time");
+          setTimeDiff(false);
+          break;
+        } else {
+          let currTime = dateTime;
+          var hours = currTime.getHours();
+          var minutes = "0" + currTime.getMinutes();
+          var seconds = "0" + currTime.getSeconds();
+          var millisecond = "0" + currTime.getMilliseconds();
+          let finalTime =
+            hours +
+            ":" +
+            minutes.substr(-2) +
+            ":" +
+            seconds.substr(-2) +
+            ":" +
+            millisecond.substr(-3);
+
+          if (finalTime == startTime) {
+            origin = currTime;
+            break;
+          }
+        }
+      }
+      if (calTimeDiff) {
+        const timeDiffArray = timestamps.map((date) => {
+          const timeDiff = date - origin;
+          const timeDiffFormatted = new Date(timeDiff).toISOString();
+          return timeDiffFormatted;
+        });
+        setXRange([timeDiffArray[0], timeDiffArray[timeDiffArray.length - 1]]);
+        setTimeStamp(timeDiffArray);
+        setTimeDiff(false);
+      }
+    }
     hidePopup();
   }
 
-  function hidePopup() {
-    var popup = document.getElementById("popup");
-    popup.style.display = "none";
-  }
-
   const handleClickX = (event) => {
+    const x = event.points[0].x;
+    const y = event.points[0].y;
+    setXAnnotation(x);
+    setYAnnotation(y);
     showPopup("X", event.points[0].x, event.points[0].y);
-    console.log(event.points[0].x);
-    console.log(event.points[0].y);
-    // var myPlot = document.getElementById("charttt");
-    // debugger;
-    // myPlot.on("plotly_click", function (data) {
-    //   console.log(data);
-    // });
-    // graphAnnotation = {
-    //   // text: annotate_text,
-    //   x: event.points[0].x,
-    //   y: event.points[0].y,
-    //   text: "heyy",
-    //   showarrow: true,
-    //   arrowhead: 7,
-    //   ax: 0,
-    //   ay: -40,
-    // };
+
+    const newAnnotation = {
+      x,
+      y,
+      text: "Annotation" + serial,
+      showarrow: true,
+      arrowhead: 3,
+      ax: -30,
+      ay: -40,
+      font: { color: "white" },
+      arrowcolor: "blue",
+      bgcolor: "black",
+    };
+    setAnnotations((prevAnnotation) => [...prevAnnotation, newAnnotation]);
   };
+
   const handleClickY = (event) => {
+    const x = event.points[0].x;
+    const y = event.points[0].y;
+    setXAnnotation(x);
+    setYAnnotation(y);
     showPopup("Y", event.points[0].x, event.points[0].y);
-    console.log(event.points[0].x);
-    console.log(event.points[0].y);
+    const newAnnotation = {
+      x,
+      y,
+      text: "Annotation" + serial,
+      showarrow: true,
+      arrowhead: 3,
+      ax: -30,
+      ay: -40,
+      font: { color: "white" },
+      arrowcolor: "blue",
+      bgcolor: "black",
+    };
+    setAnnotations((prevAnnotation) => [...prevAnnotation, newAnnotation]);
   };
+
   const handleClickZ = (event) => {
+    const x = event.points[0].x;
+    const y = event.points[0].y;
+    setXAnnotation(x);
+    setYAnnotation(y);
     showPopup("Z", event.points[0].x, event.points[0].y);
-    console.log(event.points[0].x);
-    console.log(event.points[0].y);
+    const newAnnotation = {
+      x,
+      y,
+      text: "Annotation" + serial,
+      showarrow: true,
+      arrowhead: 3,
+      ax: -30,
+      ay: -40,
+      font: { color: "white" },
+      arrowcolor: "blue",
+      bgcolor: "black",
+    };
+    setAnnotations((prevAnnotation) => [...prevAnnotation, newAnnotation]);
   };
+
+  function hidePopup(removeAnnotation = true) {
+    var popup = document.getElementById("popup");
+    var timepopup = document.getElementById("timepopup");
+    if (popup.style.display != "none" && removeAnnotation) {
+      setAnnotations((prevAnnotations) => {
+        const updatedAnnotations = [...prevAnnotations];
+        updatedAnnotations.pop(); // Remove the last element
+        return updatedAnnotations;
+      });
+    }
+    if (popup.style.display != "none") {
+      popup.style.display = "none";
+    }
+    if (timepopup.style.display != "none") {
+      timepopup.style.display = "none";
+    }
+  }
 
   function downloadJson() {
     var rows = Array.from(
@@ -178,16 +286,7 @@ export default function Charts() {
     setVideoSource(videoURL);
   };
 
-  function unixEpochToDateTime(timestamp) {
-    let timeString = timestamp.map((time) => {
-      let unixTime = time;
-      return new Date(unixTime);
-    });
-    return timeString;
-  }
-
   const handleRelayout = (event) => {
-    // Update the x-axis range when panning
     if (event["xaxis.range[0]"]) {
       let start = event["xaxis.range[0]"];
       let end = event["xaxis.range[1]"];
@@ -198,76 +297,93 @@ export default function Charts() {
   return (
     <>
       <div>
-        <div className="my-3  d-flex justify-content-center">
-          <button
-            className="btn btn-primary "
-            style={{ display: "block" }}
-            onClick={() => document.getElementById("getCSVFile").click()}
-          >
-            Click to upload CSV File
-          </button>
-          <input
-            id="getCSVFile"
-            type="file"
-            name="file"
-            onChange={changeHandler}
-            accept=".csv"
-            style={{ display: "none", margin: "10px auto" }}
-          />
+        <h1 className="d-flex justify-content-center">
+          Parkinson's Annotation Tool
+        </h1>
+        <div className="d-flex justify-content-center">
+          <br />
+          <div className="my-3  mx-4">
+            <button
+              className="btn btn-primary "
+              style={{ display: "block" }}
+              onClick={() => document.getElementById("getCSVFile").click()}
+            >
+              Click to upload CSV File
+            </button>
+            <input
+              id="getCSVFile"
+              type="file"
+              name="file"
+              onChange={changeHandler}
+              accept=".csv"
+              style={{ display: "none", margin: "10px auto" }}
+            />
+          </div>
+          <div className=" d-flex justify-content-center my-3">
+            <button
+              className="btn btn-primary"
+              style={{ display: "block" }}
+              onClick={() => document.getElementById("getVideoFile").click()}
+            >
+              Click to upload the Video
+            </button>
+            <input
+              id="getVideoFile"
+              type="file"
+              accept="video/mp4"
+              style={{ display: "none" }}
+              onChange={handleVideoChange}
+            />
+          </div>
         </div>
-        <div className=" d-flex justify-content-center my-3">
-          <button
-            className="btn btn-primary"
-            style={{ display: "block" }}
-            onClick={() => document.getElementById("getVideoFile").click()}
-          >
-            Click to upload the Video
-          </button>
-          <input
-            id="getVideoFile"
-            type="file"
-            accept="video/mp4"
-            style={{ display: "none" }}
-            onChange={handleVideoChange}
-          />
-        </div>
+
         <div className="container ">
           <div className="main-charts">
             <div className="video-player-container">
               {videoSource && (
                 <div>
-                  <video controls>
+                  <video
+                    controls
+                    style={{
+                      width: "85%",
+                    }}
+                  >
                     <source src={videoSource} type="video/mp4" />
                   </video>
                 </div>
               )}
             </div>
-            <div className="chart-container">
+            <div className="chart-container" id="chart3">
               <Plot
+                ref={chart3Ref}
+                id="chart3"
                 data={[
                   {
                     x: timestamps,
-                    y: xValues,
-                    mode: "lines",
+                    y: zValues,
+                    mode: "lines  ",
                     marker: { color: "green" },
                   },
                 ]}
                 layout={{
-                  title: "Accelerometer X", // Set the fixed y-axis range
+                  title: "Accelerometer Z", // Set the fixed y-axis range
                   width: 1000,
                   height: 500,
                   hovermode: "closest",
                   dragmode: "pan",
-                  gridwidth: 0.5,
+                  annotations: annotations,
+
                   xaxis: {
                     title: "Timestamp(POSIX)",
                     type: "date",
                     gridcolor: "lightgray", // Set the color of the grid lines
+                    gridwidth: 0.5,
                     range: xRange,
                     rangeslider: {
                       visible: true,
+                      range: xRange,
                     },
-                    tickformat: "%H:%M:%S", // Specify the custom tick format for "hh:mm:ss"
+                    tickformat: "%H:%M:%S:%L",
                     rangeselector: {
                       buttons: [
                         {
@@ -308,17 +424,30 @@ export default function Charts() {
                     },
                   },
                   yaxis: {
-                    title: "Accelerometer X",
                     fixedrange: true,
+                    title: "Accelerometer Z",
                   },
                 }}
                 onRelayout={handleRelayout}
-                onClick={handleClickX}
+                onClick={handleClickZ}
               />
             </div>
+            <div style={{ marginLeft: "420px" }}>
+              {buttonDisabled && (
+                <button
+                  className="btn btn-primary "
+                  style={{ display: "block" }}
+                  onClick={showTimeStartPopup}
+                >
+                  Select the Start Time
+                </button>
+              )}
+            </div>
             <hr />
-            <div className="chart-container">
+            <div className="chart-container" id="chart2">
               <Plot
+                ref={chart2Ref}
+                id="chart2"
                 data={[
                   {
                     x: timestamps,
@@ -333,6 +462,8 @@ export default function Charts() {
                   height: 500,
                   hovermode: "closest",
                   dragmode: "pan",
+                  annotations: annotations,
+
                   xaxis: {
                     title: "Timestamp(POSIX)",
                     type: "date",
@@ -341,6 +472,7 @@ export default function Charts() {
                     range: xRange,
                     rangeslider: {
                       visible: true,
+                      range: xRange,
                     },
                     tickformat: "%H:%M:%S", // Specify the custom tick format for "hh:mm:ss"
                     rangeselector: {
@@ -392,32 +524,36 @@ export default function Charts() {
               />
             </div>
             <hr />
-            <div className="chart-container">
+            <div className="chart-container" id="chart1">
               <Plot
+                ref={chart1Ref}
+                id="chart1"
                 data={[
                   {
                     x: timestamps,
-                    y: zValues,
-                    mode: "lines  ",
+                    y: xValues,
+                    mode: "lines",
                     marker: { color: "green" },
                   },
                 ]}
                 layout={{
-                  title: "Accelerometer Z", // Set the fixed y-axis range
+                  title: "Accelerometer X",
                   width: 1000,
                   height: 500,
                   hovermode: "closest",
                   dragmode: "pan",
+                  gridwidth: 0.5,
+                  annotations: annotations,
                   xaxis: {
                     title: "Timestamp(POSIX)",
                     type: "date",
-                    gridcolor: "lightgray", // Set the color of the grid lines
-                    gridwidth: 0.5,
+                    gridcolor: "lightgray",
                     range: xRange,
                     rangeslider: {
                       visible: true,
+                      range: xRange,
                     },
-                    tickformat: "%H:%M:%S",
+                    tickformat: "%H:%M:%S.%L", // Specify the custom tick format for "hh:mm:ss"
                     rangeselector: {
                       buttons: [
                         {
@@ -458,15 +594,29 @@ export default function Charts() {
                     },
                   },
                   yaxis: {
+                    title: "Accelerometer X",
                     fixedrange: true,
-                    title: "Accelerometer Z",
                   },
                 }}
                 onRelayout={handleRelayout}
-                onClick={handleClickZ}
+                onClick={handleClickX}
               />
+
+              <div className="popup" id="timepopup" style={{ display: "none" }}>
+                <h3>Enter the Start Time</h3>
+                <input type="text" id="startTime-input" />
+                <button onClick={changeStartTime} className="buttonP">
+                  Submit
+                </button>
+                <button onClick={() => hidePopup(true)} className="buttonP">
+                  Close
+                </button>
+              </div>
             </div>
+
+            <hr />
           </div>
+
           <div className="annotation-container">
             <h2 className="text-center mb-3">Annotations</h2>
             <div id="tableContainer">
@@ -503,7 +653,7 @@ export default function Charts() {
           <button onClick={addAnnotation} className="buttonP">
             Submit
           </button>
-          <button onClick={hidePopup} className="buttonP">
+          <button onClick={() => hidePopup(true)} className="buttonP">
             Close
           </button>
         </div>
