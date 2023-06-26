@@ -306,7 +306,7 @@ export default function Charts() {
   return (
     <>
       <div>
-        <h1 className="d-flex justify-content-center bg-danger">
+        <h1 className="d-flex justify-content-center">
           Parkinson's Annotation Tool
         </h1>
         <div className="d-flex justify-content-center">
