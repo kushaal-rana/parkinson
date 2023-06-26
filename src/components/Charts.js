@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import Papa from "papaparse";
 import Plot from "react-plotly.js";
 
@@ -19,6 +19,7 @@ export default function Charts() {
   const [annotations, setAnnotations] = useState([]);
   const [buttonDisabled, setButtonDisabled] = useState(false);
   const [calTimeDiff, setTimeDiff] = useState(true);
+  const [disableClick, setDisableClick] = useState(false);
 
   const updateChart = (results) => {
     const chartData = results.data;
@@ -65,6 +66,7 @@ export default function Charts() {
 
   // Show the annotation popup
   function showPopup(axis, x, y) {
+    setDisableClick(true);
     let popup = document.getElementById("popup");
     popup.style.display = "block";
     document.getElementById("xValue").innerHTML = "Timestamp: " + x;
@@ -122,7 +124,6 @@ export default function Charts() {
     var annotationInput = document.getElementById("startTime-input");
     var startTime = annotationInput.value;
     let origin;
-
     if (startTime !== "") {
       for (const dateTime of timestamps) {
         if (typeof dateTime === "string") {
@@ -144,7 +145,7 @@ export default function Charts() {
             ":" +
             millisecond.substr(-3);
 
-          if (finalTime == startTime) {
+          if (finalTime === startTime) {
             origin = currTime;
             break;
           }
@@ -162,86 +163,94 @@ export default function Charts() {
       }
     }
     hidePopup();
+    setDisableClick(false);
   }
 
   const handleClickX = (event) => {
-    const x = event.points[0].x;
-    const y = event.points[0].y;
-    setXAnnotation(x);
-    setYAnnotation(y);
-    showPopup("X", event.points[0].x, event.points[0].y);
+    if (!disableClick) {
+      const x = event.points[0].x;
+      const y = event.points[0].y;
+      setXAnnotation(x);
+      setYAnnotation(y);
+      showPopup("X", event.points[0].x, event.points[0].y);
 
-    const newAnnotation = {
-      x,
-      y,
-      text: "Annotation" + serial,
-      showarrow: true,
-      arrowhead: 3,
-      ax: -30,
-      ay: -40,
-      font: { color: "white" },
-      arrowcolor: "blue",
-      bgcolor: "black",
-    };
-    setAnnotations((prevAnnotation) => [...prevAnnotation, newAnnotation]);
+      const newAnnotation = {
+        x,
+        y,
+        text: "Annotation" + serial,
+        showarrow: true,
+        arrowhead: 3,
+        ax: -30,
+        ay: -40,
+        font: { color: "white" },
+        arrowcolor: "blue",
+        bgcolor: "black",
+      };
+      setAnnotations((prevAnnotation) => [...prevAnnotation, newAnnotation]);
+    }
   };
 
   const handleClickY = (event) => {
-    const x = event.points[0].x;
-    const y = event.points[0].y;
-    setXAnnotation(x);
-    setYAnnotation(y);
-    showPopup("Y", event.points[0].x, event.points[0].y);
-    const newAnnotation = {
-      x,
-      y,
-      text: "Annotation" + serial,
-      showarrow: true,
-      arrowhead: 3,
-      ax: -30,
-      ay: -40,
-      font: { color: "white" },
-      arrowcolor: "blue",
-      bgcolor: "black",
-    };
-    setAnnotations((prevAnnotation) => [...prevAnnotation, newAnnotation]);
+    if (!disableClick) {
+      const x = event.points[0].x;
+      const y = event.points[0].y;
+      setXAnnotation(x);
+      setYAnnotation(y);
+      showPopup("Y", event.points[0].x, event.points[0].y);
+      const newAnnotation = {
+        x,
+        y,
+        text: "Annotation" + serial,
+        showarrow: true,
+        arrowhead: 3,
+        ax: -30,
+        ay: -40,
+        font: { color: "white" },
+        arrowcolor: "blue",
+        bgcolor: "black",
+      };
+      setAnnotations((prevAnnotation) => [...prevAnnotation, newAnnotation]);
+    }
   };
 
   const handleClickZ = (event) => {
-    const x = event.points[0].x;
-    const y = event.points[0].y;
-    setXAnnotation(x);
-    setYAnnotation(y);
-    showPopup("Z", event.points[0].x, event.points[0].y);
-    const newAnnotation = {
-      x,
-      y,
-      text: "Annotation" + serial,
-      showarrow: true,
-      arrowhead: 3,
-      ax: -30,
-      ay: -40,
-      font: { color: "white" },
-      arrowcolor: "blue",
-      bgcolor: "black",
-    };
-    setAnnotations((prevAnnotation) => [...prevAnnotation, newAnnotation]);
+    if (!disableClick) {
+      const x = event.points[0].x;
+      const y = event.points[0].y;
+      setXAnnotation(x);
+      setYAnnotation(y);
+      showPopup("Z", event.points[0].x, event.points[0].y);
+      const newAnnotation = {
+        x,
+        y,
+        text: "Annotation" + serial,
+        showarrow: true,
+        arrowhead: 3,
+        ax: -30,
+        ay: -40,
+        font: { color: "white" },
+        arrowcolor: "blue",
+        bgcolor: "black",
+      };
+      setAnnotations((prevAnnotation) => [...prevAnnotation, newAnnotation]);
+    }
   };
 
   function hidePopup(removeAnnotation = true) {
+    setDisableClick(false);
     var popup = document.getElementById("popup");
     var timepopup = document.getElementById("timepopup");
-    if (popup.style.display != "none" && removeAnnotation) {
+    if (popup.style.display !== "none" && removeAnnotation) {
       setAnnotations((prevAnnotations) => {
         const updatedAnnotations = [...prevAnnotations];
         updatedAnnotations.pop(); // Remove the last element
         return updatedAnnotations;
       });
     }
-    if (popup.style.display != "none") {
+    if (popup.style.display !== "none") {
       popup.style.display = "none";
     }
-    if (timepopup.style.display != "none") {
+    if (timepopup.style.display !== "none") {
       timepopup.style.display = "none";
     }
   }
@@ -474,7 +483,7 @@ export default function Charts() {
                       visible: true,
                       range: xRange,
                     },
-                    tickformat: "%H:%M:%S", // Specify the custom tick format for "hh:mm:ss"
+                    tickformat: "%H:%M:%S:%L",
                     rangeselector: {
                       buttons: [
                         {
@@ -553,7 +562,7 @@ export default function Charts() {
                       visible: true,
                       range: xRange,
                     },
-                    tickformat: "%H:%M:%S.%L", // Specify the custom tick format for "hh:mm:ss"
+                    tickformat: "%H:%M:%S.%L",
                     rangeselector: {
                       buttons: [
                         {
