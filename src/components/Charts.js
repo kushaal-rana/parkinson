@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import Papa from "papaparse";
 import Plot from "react-plotly.js";
+import "./Charts.css";
 
 export default function Charts() {
   const [timestamps, setTimeStamp] = useState([]);
@@ -306,12 +307,9 @@ export default function Charts() {
   return (
     <>
       <div>
-        <h1 className="d-flex justify-content-center">
-          Parkinson's Annotation Tool
-        </h1>
         <div className="d-flex justify-content-center">
           <br />
-          <div className="my-3  mx-4">
+          <div className="my-5  mx-4 ">
             <button
               className="btn btn-primary "
               style={{ display: "block" }}
@@ -328,7 +326,8 @@ export default function Charts() {
               style={{ display: "none", margin: "10px auto" }}
             />
           </div>
-          <div className=" d-flex justify-content-center my-3">
+          <hr />
+          <div className=" d-flex justify-content-center my-5">
             <button
               className="btn btn-primary"
               style={{ display: "block" }}
@@ -383,7 +382,7 @@ export default function Charts() {
                   annotations: annotations,
 
                   xaxis: {
-                    title: "Timestamp(POSIX)",
+                    title: "Timestamp",
                     type: "date",
                     gridcolor: "lightgray", // Set the color of the grid lines
                     gridwidth: 0.5,
@@ -474,7 +473,7 @@ export default function Charts() {
                   annotations: annotations,
 
                   xaxis: {
-                    title: "Timestamp(POSIX)",
+                    title: "Timestamp",
                     type: "date",
                     gridcolor: "lightgray", // Set the color of the grid lines
                     gridwidth: 0.5,
@@ -554,7 +553,7 @@ export default function Charts() {
                   gridwidth: 0.5,
                   annotations: annotations,
                   xaxis: {
-                    title: "Timestamp(POSIX)",
+                    title: "Timestamp",
                     type: "date",
                     gridcolor: "lightgray",
                     range: xRange,
@@ -627,7 +626,7 @@ export default function Charts() {
           </div>
 
           <div className="annotation-container">
-            <h2 className="text-center mb-3">Annotations</h2>
+            <h2 className="text-center my-3">Output</h2>
             <div id="tableContainer">
               <table id="myTable">
                 <tbody>
@@ -646,7 +645,7 @@ export default function Charts() {
                   onClick={downloadJson}
                   className="buttonD "
                 >
-                  Download JSON
+                  Download as JSON File
                 </button>
               </div>
             </div>

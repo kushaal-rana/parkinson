@@ -1,0 +1,59 @@
+.container2 {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 20px;
+  }
+  h5{
+    margin-top: 10px;
+    margin-right: 20px;
+  }
+  .file-input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .upload-button {
+    margin-left: 25px;
+    padding: 12px 31px;;
+    background-color: #e3172b;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease-in-out;
+  }
+  
+  .upload-button:hover {
+    background-color: #0056b3;
+  }
+
+  
+  .loader {
+    margin: auto;
+    border: 20px solid #EAF0F6;
+    border-radius: 50%;
+    border-top: 20px solid #000000;
+    width: 150px;
+    height: 150px;
+    animation: spinner 2s linear infinite;
+    margin-top: 45px;
+    margin-bottom: 20px;
+  
+  }
+  
+  @keyframes spinner {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .spinner{
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    
+  }

@@ -1,0 +1,135 @@
+
+
+.container {
+    display: flex;
+    max-width: 100vw !important;
+  }
+  
+  .annotation-container {
+    background-color: rgba(128, 128, 128, 0.59);
+    border-radius: 5px;
+    width: 106vh;
+    border: 3px solid #429142;
+  }
+  
+  .video-player-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  
+  #annotation-input {
+    width: 100%;
+  }
+  
+  /* table styling */
+    table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  }
+  
+  th, td {
+  width: 10%;
+  word-wrap: break-word;
+  max-width: 10%;
+  padding: 5px;
+  border: 1px solid black;
+  text-align: center;
+  }
+  #tableContainer {
+  height: 100%;
+  overflow-y: auto;
+  margin: 19px ;
+  }
+  
+  
+  /* input text popup */
+  
+  .popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #f9f9f9;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  font-family: Arial, sans-serif;
+  text-align: center;
+  }
+  
+  .popup h3 {
+  font-size: 20px;
+  margin-bottom: 10px;
+  }
+  
+  .popup input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  }
+  /* pop up button */
+  .buttonP {
+  display: inline-block;
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 5px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  text-decoration: none;
+  margin-top: 10px;
+  }
+  
+  .buttonP:hover {
+  background-color: #45a049;
+  }
+  
+  /* start/stop button styling */
+  .center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  }
+  
+  .button {
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 5px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  cursor: pointer;
+  margin: 5px;
+  }
+  
+  .button:hover {
+  background-color: #45a049;
+  }
+  /* download button */
+  .buttonD {
+  display: inline-block;
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 5px;
+  background-color: #3a883d;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  text-decoration: none;
+  margin: 10px;
+  left: 50%;
+  
+  }
+  
+  .buttonD:hover {
+  background-color: #45a049;
+  }
