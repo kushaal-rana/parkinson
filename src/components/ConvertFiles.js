@@ -5,7 +5,6 @@ import "./ConvertFiles.css";
 export default function ConvertFiles() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [downloadLink, setDownloadLink] = useState(null);
   const [csvContent, setCSVContent] = useState(null);
 
   const handleFileChange = (event) => {
@@ -23,7 +22,7 @@ export default function ConvertFiles() {
       //   fileName: "test.h5", // Replace with the actual file name
       // };
       // fetch("https://fhr-backend-3e6843936b75.herokuapp.com/execute-script", {
-      fetch("https://fhr-backend-3e6843936b75.herokuapp.com/execute-script", {
+      fetch("http://192.155.89.20:8000/execute-script/", {
         method: "POST",
         body: formData,
       })
@@ -31,7 +30,7 @@ export default function ConvertFiles() {
         .then((resp) => {
           setIsLoading(false);
           debugger;
-          setDownloadLink(resp.csv_data); // Set the download link
+          downloadJSON(resp.csv_data)
           console.log(resp);
         })
         .catch((error) => console.log(error));
@@ -39,10 +38,10 @@ export default function ConvertFiles() {
   };
 
   const displayCSVContent = async (filename) => {
-    debugger;
     try {
       const resp = await fetch(
-        `https://fhr-backend-3e6843936b75.herokuapp.com/get-csv/${filename}`
+        // `https://parkinson-django-aa03ff498c72.herokuapp.com/get-csv/${filename}`
+        `http://192.155.89.20:8000/get-csv/${filename}`
       );
       const data = await resp.json();
       setCSVContent(data.content);
@@ -85,18 +84,9 @@ export default function ConvertFiles() {
             className="file-input"
           />
           <button onClick={convertToCSV} className="upload-button">
-            Convert to CSV
+            Download File
           </button>
-          {downloadLink && (
-            <div>
-              <button
-                className="upload-button"
-                onClick={() => downloadJSON(downloadLink)}
-              >
-                Download JSON
-              </button>
-            </div>
-          )}
+         
         </div>
       )}
     </>
