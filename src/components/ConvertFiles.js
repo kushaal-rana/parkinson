@@ -22,7 +22,7 @@ export default function ConvertFiles() {
       //   fileName: "test.h5", // Replace with the actual file name
       // };
       // fetch("https://fhr-backend-3e6843936b75.herokuapp.com/execute-script", {
-      fetch("http://192.155.89.20:8000/execute-script/", {
+      fetch("http://127.0.0.1:8000/execute-script/", {
         method: "POST",
         body: formData,
       })
@@ -41,7 +41,7 @@ export default function ConvertFiles() {
     try {
       const resp = await fetch(
         // `https://parkinson-django-aa03ff498c72.herokuapp.com/get-csv/${filename}`
-        `http://192.155.89.20:8000/get-csv/${filename}`
+        `http://127.0.0.1:8000/get-csv/${filename}`
       );
       const data = await resp.json();
       setCSVContent(data.content);
