@@ -23,7 +23,7 @@ export default function ConvertFiles() {
       // };
       // fetch("https://fhr-backend-3e6843936b75.herokuapp.com/execute-script", {
       // fetch("http://192.155.89.20:8000/execute-script/", {
-      fetch("http://127.0.0.1:8000/execute-script/", {
+      fetch("http://161.35.62.90:80/execute-script/", {
         method: "POST",
         body: formData,
       })
@@ -41,7 +41,7 @@ export default function ConvertFiles() {
 
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        console.log("Hut Maki.. CHalgaya")
+        console.log("File Working")
         })
           // setIsLoading(false);
           // debugger;
