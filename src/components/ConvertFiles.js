@@ -23,30 +23,16 @@ export default function ConvertFiles() {
       // };
       // fetch("https://fhr-backend-3e6843936b75.herokuapp.com/execute-script", {
       // fetch("http://192.155.89.20:8000/execute-script/", {
-      fetch("http://161.35.62.90:80/execute-script/", {
+      fetch("http://161.35.62.90/execute-script/", {
         method: "POST",
         body: formData,
       })
-        .then((resp) => resp.blob()
-          )
-        .then((blob) => {
+      .then((resp) => resp.json())
+      .then((resp) => {
           setIsLoading(false);
         // Create a URL for the blob and generate a download link
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "response.gz";  // Set the desired filename
-        document.body.appendChild(a);
-        a.click();
-
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        console.log("File Working")
+          downloadJSON(resp.csv_data)
         })
-          // setIsLoading(false);
-          // debugger;
-          // downloadJSON(resp.csv_data)
-          // console.log(resp);
         .catch((error) => {
           setIsLoading(false);
           console.error("Error:", error);
@@ -54,36 +40,36 @@ export default function ConvertFiles() {
     }
   };
 
-  // const displayCSVContent = async (filename) => {
-  //   try {
-  //     const resp = await fetch(
-  //       // `https://parkinson-django-aa03ff498c72.herokuapp.com/get-csv/${filename}`
-  //       // `http://192.155.89.20:8000/get-csv/${filename}`
-  //       `http://127.0.0.1:8000/get-csv/${filename}`
-  //     );
-  //     const data = await resp.json();
-  //     setCSVContent(data.content);
-  //     const blob = new Blob([data.content], {
-  //       type: "application/json",
-  //     });
-  //     const url = URL.createObjectURL(blob);
-  //     const a = document.createElement("a");
-  //     a.href = url;
-  //     a.download = `${filename}`;
-  //     a.click();
-  //     URL.revokeObjectURL(url);
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // };
+  const displayCSVContent = async (filename) => {
+    try {
+      const resp = await fetch(
+        // `https://parkinson-django-aa03ff498c72.herokuapp.com/get-csv/${filename}`
+        // `http://192.155.89.20:8000/get-csv/${filename}`
+        `http://127.0.0.1:8000/get-csv/${filename}`
+      );
+      const data = await resp.json();
+      setCSVContent(data.content);
+      const blob = new Blob([data.content], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${filename}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
 
-  // const downloadJSON = (filename) => {
-  //   filename.forEach((file) => {
-  //     debugger;
-  //     displayCSVContent(file);
-  //   });
-  // };
+  const downloadJSON = (filename) => {
+    filename.forEach((file) => {
+      debugger;
+      displayCSVContent(file);
+    });
+  };
 
   return (
     <>
