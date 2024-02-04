@@ -8,6 +8,9 @@ export default function Charts() {
   const [xValues, setxValues] = useState([]);
   const [yValues, setyValues] = useState([]);
   const [zValues, setzValues] = useState([]);
+  const [xGyroValues, setxGyroValues] = useState([]);
+  const [yGyroValues, setyGyroValues] = useState([]);
+  const [zGyroValues, setzGyroValues] = useState([]);
   const [xRange, setXRange] = useState([]);
   const [xAnnotation, setXAnnotation] = useState();
   const [yAnnotation, setYAnnotation] = useState();
@@ -17,6 +20,9 @@ export default function Charts() {
   const chart1Ref = useRef(null);
   const chart2Ref = useRef(null);
   const chart3Ref = useRef(null);
+  const chart4Ref = useRef(null);
+  const chart5Ref = useRef(null);
+  const chart6Ref = useRef(null);
   const [annotations, setAnnotations] = useState([]);
   const [buttonDisabled, setButtonDisabled] = useState(false);
   const [calTimeDiff, setTimeDiff] = useState(true);
@@ -24,9 +30,13 @@ export default function Charts() {
 
   const updateChart = (results) => {
     const chartData = results.data;
+    debugger
     setxValues(chartData.map((d) => d.x_accel));
     setyValues(chartData.map((d) => d.y_accel));
     setzValues(chartData.map((d) => d.z_accel));
+    setxGyroValues(chartData.map((d) => d.x_gyro));
+    setyGyroValues(chartData.map((d) => d.y_gyro));
+    setzGyroValues(chartData.map((d) => d.z_gyro));
     setTimeStamp(
       unixEpochToDateTime(
         chartData.map((data) => new Date(data.time).getTime())
@@ -124,7 +134,8 @@ export default function Charts() {
   function changeStartTime() {
     var annotationInput = document.getElementById("startTime-input");
     var startTime = annotationInput.value;
-    let origin;
+    debugger
+    let origin = 0;
     if (startTime !== "") {
       for (const dateTime of timestamps) {
         if (typeof dateTime === "string") {
@@ -152,6 +163,7 @@ export default function Charts() {
           }
         }
       }
+        debugger
       if (calTimeDiff) {
         const timeDiffArray = timestamps.map((date) => {
           const timeDiff = date - origin;
@@ -173,7 +185,7 @@ export default function Charts() {
       const y = event.points[0].y;
       setXAnnotation(x);
       setYAnnotation(y);
-      showPopup("X", event.points[0].x, event.points[0].y);
+      showPopup("Acc-X", event.points[0].x, event.points[0].y);
 
       const newAnnotation = {
         x,
@@ -197,7 +209,7 @@ export default function Charts() {
       const y = event.points[0].y;
       setXAnnotation(x);
       setYAnnotation(y);
-      showPopup("Y", event.points[0].x, event.points[0].y);
+      showPopup("Acc-Y", event.points[0].x, event.points[0].y);
       const newAnnotation = {
         x,
         y,
@@ -220,7 +232,7 @@ export default function Charts() {
       const y = event.points[0].y;
       setXAnnotation(x);
       setYAnnotation(y);
-      showPopup("Z", event.points[0].x, event.points[0].y);
+      showPopup("Acc-Z", event.points[0].x, event.points[0].y);
       const newAnnotation = {
         x,
         y,
@@ -237,6 +249,72 @@ export default function Charts() {
     }
   };
 
+  const handleClickGyroZ = (event) => {
+    if (!disableClick) {
+      const x = event.points[0].x;
+      const y = event.points[0].y;
+      setXAnnotation(x);
+      setYAnnotation(y);
+      showPopup("Gyro-Z", event.points[0].x, event.points[0].y);
+      const newAnnotation = {
+        x,
+        y,
+        text: "Annotation" + serial,
+        showarrow: true,
+        arrowhead: 3,
+        ax: -30,
+        ay: -40,
+        font: { color: "white" },
+        arrowcolor: "blue",
+        bgcolor: "black",
+      };
+      setAnnotations((prevAnnotation) => [...prevAnnotation, newAnnotation]);
+    }
+  };
+  const handleClickGyroY = (event) => {
+    if (!disableClick) {
+      const x = event.points[0].x;
+      const y = event.points[0].y;
+      setXAnnotation(x);
+      setYAnnotation(y);
+      showPopup("Gyro-Y", event.points[0].x, event.points[0].y);
+      const newAnnotation = {
+        x,
+        y,
+        text: "Annotation" + serial,
+        showarrow: true,
+        arrowhead: 3,
+        ax: -30,
+        ay: -40,
+        font: { color: "white" },
+        arrowcolor: "blue",
+        bgcolor: "black",
+      };
+      setAnnotations((prevAnnotation) => [...prevAnnotation, newAnnotation]);
+    }
+  };
+  const handleClickGyroX = (event) => {
+    if (!disableClick) {
+      const x = event.points[0].x;
+      const y = event.points[0].y;
+      setXAnnotation(x);
+      setYAnnotation(y);
+      showPopup("Gyro-X", event.points[0].x, event.points[0].y);
+      const newAnnotation = {
+        x,
+        y,
+        text: "Annotation" + serial,
+        showarrow: true,
+        arrowhead: 3,
+        ax: -30,
+        ay: -40,
+        font: { color: "white" },
+        arrowcolor: "blue",
+        bgcolor: "black",
+      };
+      setAnnotations((prevAnnotation) => [...prevAnnotation, newAnnotation]);
+    }
+  };
   function hidePopup(removeAnnotation = true) {
     setDisableClick(false);
     var popup = document.getElementById("popup");
@@ -621,8 +699,269 @@ export default function Charts() {
                 </button>
               </div>
             </div>
-
             <hr />
+            <div className="chart-container" id="chart4">
+              <Plot
+                ref={chart4Ref}
+                id="chart4"
+                data={[
+                  {
+                    x: timestamps,
+                    y: zGyroValues,
+                    mode: "lines  ",
+                    marker: { color: "green" },
+                  },
+                ]}
+                layout={{
+                  title: "Gyroscope Z", // Set the fixed y-axis range
+                  width: 1000,
+                  height: 500,
+                  hovermode: "closest",
+                  dragmode: "pan",
+                  annotations: annotations,
+
+                  xaxis: {
+                    title: "Timestamp",
+                    type: "date",
+                    gridcolor: "lightgray", // Set the color of the grid lines
+                    gridwidth: 0.5,
+                    range: xRange,
+                    rangeslider: {
+                      visible: true,
+                      range: xRange,
+                    },
+                    tickformat: "%H:%M:%S:%L",
+                    rangeselector: {
+                      buttons: [
+                        {
+                          count: 5,
+                          label: "5 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 10,
+                          label: "10 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 15,
+                          label: "15 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 30,
+                          label: "30 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 45,
+                          label: "45 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          label: "All",
+                          step: "all",
+                        },
+                      ],
+                    },
+                  },
+                  yaxis: {
+                    fixedrange: true,
+                    title: "Gyroscope Z",
+                  },
+                }}
+                onRelayout={handleRelayout}
+                onClick={handleClickGyroZ}
+              />
+            </div>
+            <hr />
+            <div className="chart-container" id="chart5">
+              <Plot
+                ref={chart5Ref}
+                id="chart5"
+                data={[
+                  {
+                    x: timestamps,
+                    y: yGyroValues,
+                    mode: "lines",
+                    marker: { color: "green" },
+                  },
+                ]}
+                layout={{
+                  title: "Gyroscope Y",
+                  width: 1000,
+                  height: 500,
+                  hovermode: "closest",
+                  dragmode: "pan",
+                  gridwidth: 0.5,
+                  annotations: annotations,
+                  xaxis: {
+                    title: "Timestamp",
+                    type: "date",
+                    gridcolor: "lightgray",
+                    range: xRange,
+                    rangeslider: {
+                      visible: true,
+                      range: xRange,
+                    },
+                    tickformat: "%H:%M:%S.%L",
+                    rangeselector: {
+                      buttons: [
+                        {
+                          count: 5,
+                          label: "5 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 10,
+                          label: "10 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 15,
+                          label: "15 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 30,
+                          label: "30 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 45,
+                          label: "45 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          label: "All",
+                          step: "all",
+                        },
+                      ],
+                    },
+                  },
+                  yaxis: {
+                    title: "Gyroscope Y",
+                    fixedrange: true,
+                  },
+                }}
+                onRelayout={handleRelayout}
+                onClick={handleClickGyroY}
+              />
+
+              <div className="popup" id="timepopup" style={{ display: "none" }}>
+                <h3>Enter the Start Time</h3>
+                <input type="text" id="startTime-input" />
+                <button onClick={changeStartTime} className="buttonP">
+                  Submit
+                </button>
+                <button onClick={() => hidePopup(true)} className="buttonP">
+                  Close
+                </button>
+              </div>
+            </div>
+            <hr />
+            <div className="chart-container" id="chart6">
+              <Plot
+                ref={chart6Ref}
+                id="chart6"
+                data={[
+                  {
+                    x: timestamps,
+                    y: zGyroValues,
+                    mode: "lines",
+                    marker: { color: "green" },
+                  },
+                ]}
+                layout={{
+                  title: "Gyroscope X",
+                  width: 1000,
+                  height: 500,
+                  hovermode: "closest",
+                  dragmode: "pan",
+                  gridwidth: 0.5,
+                  annotations: annotations,
+                  xaxis: {
+                    title: "Timestamp",
+                    type: "date",
+                    gridcolor: "lightgray",
+                    range: xRange,
+                    rangeslider: {
+                      visible: true,
+                      range: xRange,
+                    },
+                    tickformat: "%H:%M:%S.%L",
+                    rangeselector: {
+                      buttons: [
+                        {
+                          count: 5,
+                          label: "5 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 10,
+                          label: "10 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 15,
+                          label: "15 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 30,
+                          label: "30 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          count: 45,
+                          label: "45 sec",
+                          step: "second",
+                          stepmode: "backward",
+                        },
+                        {
+                          label: "All",
+                          step: "all",
+                        },
+                      ],
+                    },
+                  },
+                  yaxis: {
+                    title: "Gyroscope X",
+                    fixedrange: true,
+                  },
+                }}
+                onRelayout={handleRelayout}
+                onClick={handleClickGyroX}
+              />
+
+              <div className="popup" id="timepopup" style={{ display: "none" }}>
+                <h3>Enter the Start Time</h3>
+                <input type="text" id="startTime-input" />
+                <button onClick={changeStartTime} className="buttonP">
+                  Submit
+                </button>
+                <button onClick={() => hidePopup(true)} className="buttonP">
+                  Close
+                </button>
+              </div>
+            </div>
+            <hr />
+
+
           </div>
 
           <div className="annotation-container">
