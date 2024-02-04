@@ -877,7 +877,7 @@ export default function Charts() {
                 data={[
                   {
                     x: timestamps,
-                    y: zGyroValues,
+                    y: xGyroValues,
                     mode: "lines",
                     marker: { color: "green" },
                   },
