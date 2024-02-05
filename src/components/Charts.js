@@ -27,10 +27,11 @@ export default function Charts() {
   const [buttonDisabled, setButtonDisabled] = useState(false);
   const [calTimeDiff, setTimeDiff] = useState(true);
   const [disableClick, setDisableClick] = useState(false);
+  const [videoFile, setVideoFile] = useState(null);
+
 
   const updateChart = (results) => {
     const chartData = results.data;
-    debugger
     setxValues(chartData.map((d) => d.x_accel));
     setyValues(chartData.map((d) => d.y_accel));
     setzValues(chartData.map((d) => d.z_accel));
@@ -370,6 +371,8 @@ export default function Charts() {
 
   const handleVideoChange = (event) => {
     const file = event.target.files[0];
+    debugger
+    setVideoFile(event.target.files[0]);
     const videoURL = URL.createObjectURL(file);
     setVideoSource(videoURL);
   };
@@ -392,6 +395,7 @@ export default function Charts() {
               className="btn btn-primary "
               style={{ display: "block" }}
               onClick={() => document.getElementById("getCSVFile").click()}
+              disabled={!videoFile}
             >
               Click to upload CSV File
             </button>
