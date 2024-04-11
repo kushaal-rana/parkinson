@@ -1,6 +1,8 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Papa from "papaparse";
 import Plot from "react-plotly.js";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBackward, faForward } from '@fortawesome/free-solid-svg-icons';
 import "./Charts.css";
 
 export default function Charts() {
@@ -23,11 +25,29 @@ export default function Charts() {
   const chart4Ref = useRef(null);
   const chart5Ref = useRef(null);
   const chart6Ref = useRef(null);
+  const videoRef = useRef(null);
   const [annotations, setAnnotations] = useState([]);
   const [buttonDisabled, setButtonDisabled] = useState(false);
-  const [calTimeDiff, setTimeDiff] = useState(true);
   const [disableClick, setDisableClick] = useState(false);
   const [videoFile, setVideoFile] = useState(null);
+  const [videoTime, setVideoTime] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [currentFormatTime, setCurrentFormatTime] = useState('00:00:000');
+  const [xValue, setXValue] = useState(new Date('00:00:000'));
+
+
+  function normalizeTimestamps(timestamps) {
+    var selectedStartTime = timestamps[0];
+    let startOfDay = new Date(selectedStartTime);
+    startOfDay.setHours(0, 0, 0, 0);
+    let timeDifference = selectedStartTime - startOfDay;
+    let adjustedTimestamps = timestamps.map(timestamp => {
+      let adjustedDate = new Date(timestamp);
+      adjustedDate.setTime(adjustedDate.getTime() - timeDifference);
+      return adjustedDate;
+    });
+    return adjustedTimestamps;
+  }
 
 
   const updateChart = (results) => {
@@ -38,11 +58,16 @@ export default function Charts() {
     setxGyroValues(chartData.map((d) => d.x_gyro));
     setyGyroValues(chartData.map((d) => d.y_gyro));
     setzGyroValues(chartData.map((d) => d.z_gyro));
-    setTimeStamp(
-      unixEpochToDateTime(
-        chartData.map((data) => new Date(data.time).getTime())
-      )
+    let times = unixEpochToDateTime(
+      chartData.map((data) => new Date(data.time).getTime())
     );
+    let normalizedTimestamps = normalizeTimestamps(times);
+
+    setTimeStamp(
+      normalizedTimestamps
+    );
+    const initialXRange = normalizedTimestamps[0] ? [normalizedTimestamps[0], new Date(normalizedTimestamps[0].getTime() + 60000)] : [];
+    setXRange(initialXRange)
   };
 
   function unixEpochToDateTime(timestamp) {
@@ -54,27 +79,25 @@ export default function Charts() {
   }
 
   const changeHandler = (event) => {
-    Papa.parse(event.target.files[0], {
-      header: true,
-      skipEmptyLines: true,
-      complete: function (results) {
-        const rowsArray = [];
-        const valuesArray = [];
+    const file = event.target.files[0];
+    if (file) {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: function (results) {
+          const rowsArray = [];
+          const valuesArray = [];
 
-        results.data.map((d) => {
-          rowsArray.push(Object.keys(d));
-          valuesArray.push(Object.values(d));
-        });
-
-        // Call the updateChart function to update the chart with the parsed data
-        updateChart(results);
-      },
-    });
-    setButtonDisabled(true);
+          results.data.map((d) => {
+            rowsArray.push(Object.keys(d));
+            valuesArray.push(Object.values(d));
+          });
+          updateChart(results);
+        },
+      });
+      setButtonDisabled(true);
+    }
   };
-  // var xVal = null;
-  // var yVal = null;
-  // var axisVal = null;
 
   // Show the annotation popup
   function showPopup(axis, x, y) {
@@ -135,46 +158,28 @@ export default function Charts() {
   function changeStartTime() {
     var annotationInput = document.getElementById("startTime-input");
     var startTime = annotationInput.value;
-    debugger
-    let origin = 0;
-    if (startTime !== "") {
-      for (const dateTime of timestamps) {
-        if (typeof dateTime === "string") {
-          alert("You have already set the starting time");
-          setTimeDiff(false);
-          break;
-        } else {
-          let currTime = dateTime;
-          var hours = currTime.getHours();
-          var minutes = "0" + currTime.getMinutes();
-          var seconds = "0" + currTime.getSeconds();
-          var millisecond = "0" + currTime.getMilliseconds();
-          let finalTime =
-            hours +
-            ":" +
-            minutes.substr(-2) +
-            ":" +
-            seconds.substr(-2) +
-            ":" +
-            millisecond.substr(-3);
+    if (validateTimeFormat(startTime)) {
+      const recordedDate = timestamps[0];
+      const year = recordedDate.getFullYear();
+      const month = (recordedDate.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-based, so add 1
+      const day = recordedDate.getDate().toString().padStart(2, '0');
+      const formattedDateString = `${year}-${month}-${day}`;
+      const selectedStartTime = new Date(formattedDateString + " " + startTime);
 
-          if (finalTime === startTime) {
-            origin = currTime;
-            break;
-          }
-        }
-      }
-        debugger
-      if (calTimeDiff) {
-        const timeDiffArray = timestamps.map((date) => {
-          const timeDiff = date - origin;
-          const timeDiffFormatted = new Date(timeDiff).toISOString();
-          return timeDiffFormatted;
-        });
-        setXRange([timeDiffArray[0], timeDiffArray[timeDiffArray.length - 1]]);
-        setTimeStamp(timeDiffArray);
-        setTimeDiff(false);
-      }
+      let startOfDay = new Date(selectedStartTime);
+      startOfDay.setHours(0, 0, 0, 0);
+      let timeDifference = selectedStartTime - startOfDay;
+
+      let adjustedTimestamps = timestamps.map(timestamp => {
+        let adjustedDate = new Date(timestamp);
+        adjustedDate.setTime(adjustedDate.getTime() - timeDifference);
+        return adjustedDate;
+      });
+
+      setTimeStamp(adjustedTimestamps);
+    }
+    else {
+      alert("Please enter the timestamp in correct format(HH:mm:ss:SSS). Ex: 13:51:00:000");
     }
     hidePopup();
     setDisableClick(false);
@@ -335,35 +340,57 @@ export default function Charts() {
     }
   }
 
-  function downloadJson() {
+  function validateTimeFormat(input) {
+    const regex = /^(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]):([0-9]{3})$/;
+    return regex.test(input);
+  }
+
+  const handleGoToTimestamp = () => {
+    const timestampInput = document.getElementById("timestampInput").value;
+    const secondDate = timestamps[timestamps.length - 1];
+    var formattedDateString = "1970-01-01 "
+
+    if (validateTimeFormat(timestampInput)) {
+      if (typeof secondDate === 'object' && secondDate instanceof Date) {
+        const year = secondDate.getFullYear();
+        const month = (secondDate.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-based, so add 1
+        const day = secondDate.getDate().toString().padStart(2, '0');
+        formattedDateString = `${year}-${month}-${day}`;
+      }
+
+      const inputDate = new Date(formattedDateString + " " + timestampInput);
+      const before = new Date(inputDate.getTime() - 15000);
+      const after = new Date(inputDate.getTime() + 15000);
+      setXRange([before, after]);
+    }
+    else {
+      alert("Please enter the timestamp in correct format(HH:mm:ss:SSS). Ex: 13:51:00:000");
+    }
+  };
+
+  function downloadCSV() {
     var rows = Array.from(
       document.querySelectorAll("#myTable tr:not(:first-child)")
     );
 
-    // Create an array to hold the table data
-    var tableData = [];
+    var csvData = "timestamp,value,annotation\n";
 
     // Iterate over the rows and extract the cell values
     rows?.forEach(function (row) {
-      var rowData = {
-        timestamp: row.cells[2].textContent,
-        value: row.cells[3].textContent,
-        annotation: row.cells[4].textContent,
-      };
-
-      tableData.push(rowData);
+      var rowData = [
+        row.cells[2].textContent,
+        row.cells[3].textContent,
+        row.cells[4].textContent,
+      ];
+      csvData += rowData.join(",") + "\n";
     });
 
-    // Convert the table data to a JSON string
-    var jsonData = JSON.stringify(tableData, null, 2);
+    var blob = new Blob([csvData], { type: "text/csv" });
 
-    // Create a Blob containing the JSON data
-    var blob = new Blob([jsonData], { type: "application/json" });
-
-    // Create a link element for downloading the JSON file
+    // Create a link element for downloading the CSV file
     var downloadLink = document.createElement("a");
     downloadLink.href = URL.createObjectURL(blob);
-    downloadLink.download = "table_data.json";
+    downloadLink.download = "table_data.csv";
 
     // Simulate a click on the download link to initiate the download
     downloadLink.click();
@@ -371,10 +398,12 @@ export default function Charts() {
 
   const handleVideoChange = (event) => {
     const file = event.target.files[0];
-    debugger
-    setVideoFile(event.target.files[0]);
-    const videoURL = URL.createObjectURL(file);
-    setVideoSource(videoURL);
+    // Check if a file is selected
+    if (file) {
+      setVideoFile(file);
+      const videoURL = URL.createObjectURL(file);
+      setVideoSource(videoURL);
+    }
   };
 
   const handleRelayout = (event) => {
@@ -384,6 +413,54 @@ export default function Charts() {
       setXRange([new Date(start), new Date(end)]);
     }
   };
+
+  const videoTimeChange = (event) => {
+    const video = event.target;
+    const currentTime = video.currentTime;
+    const currentFormattedTime = formatTime(currentTime);
+    setCurrentFormatTime(currentFormattedTime);
+    setVideoTime(event.target.currentTime);
+    const secondDate = timestamps[timestamps.length - 1];
+    var formattedDateString = "1970-01-01 "
+
+    if (typeof secondDate === 'object' && secondDate instanceof Date) {
+      const year = secondDate.getFullYear();
+      const month = (secondDate.getMonth() + 1).toString().padStart(2, '0');
+      const day = secondDate.getDate().toString().padStart(2, '0');
+      formattedDateString = `${year}-${month}-${day}`;
+    }
+
+    const combinedDateString = new Date(formattedDateString + "T00:00:00");
+    const combinedDate = new Date(combinedDateString);
+    const exactDate = new Date(combinedDate.getTime() + (event.target.currentTime) * 1000);
+    setXValue(exactDate)
+    const before = new Date(combinedDate.getTime() + (event.target.currentTime - 2.5) * 1000);
+    const after = new Date(combinedDate.getTime() + (event.target.currentTime + 2.5) * 1000);
+    setXRange([before, after]);
+  }
+
+  const formatTime = (time) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    const milliseconds = Math.floor((time - Math.floor(time)) * 1000);
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}:${String(milliseconds).padStart(3, "0")}`;
+  }
+
+  const setPlayBack = () => {
+    videoRef.current.playbackRate = playbackRate;
+  }
+
+  const setPlaybackSpeed = (e) => {
+    videoRef.current.playbackRate = parseFloat(e.target.value);
+    setPlaybackRate(parseFloat(e.target.value));
+  }
+
+  const skip = (time) => {
+    const video = document.getElementById("myVideo");
+    video.currentTime = video.currentTime + time;
+  }
+
+
 
   return (
     <>
@@ -425,572 +502,686 @@ export default function Charts() {
               onChange={handleVideoChange}
             />
           </div>
-        </div>
-
-        <div className="container ">
-          <div className="main-charts">
-            <div className="video-player-container">
-              {videoSource && (
-                <div>
-                  <video
-                    controls
-                    style={{
-                      width: "85%",
-                    }}
-                  >
-                    <source src={videoSource} type="video/mp4" />
-                  </video>
-                </div>
-              )}
-            </div>
-            <div className="chart-container" id="chart3">
-              <Plot
-                ref={chart3Ref}
-                id="chart3"
-                data={[
-                  {
-                    x: timestamps,
-                    y: zValues,
-                    mode: "lines  ",
-                    marker: { color: "green" },
-                  },
-                ]}
-                layout={{
-                  title: "Accelerometer Z", // Set the fixed y-axis range
-                  width: 1000,
-                  height: 500,
-                  hovermode: "closest",
-                  dragmode: "pan",
-                  annotations: annotations,
-
-                  xaxis: {
-                    title: "Timestamp",
-                    type: "date",
-                    gridcolor: "lightgray", // Set the color of the grid lines
-                    gridwidth: 0.5,
-                    range: xRange,
-                    rangeslider: {
-                      visible: true,
-                      range: xRange,
-                    },
-                    tickformat: "%H:%M:%S:%L",
-                    rangeselector: {
-                      buttons: [
-                        {
-                          count: 5,
-                          label: "5 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 10,
-                          label: "10 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 15,
-                          label: "15 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 30,
-                          label: "30 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 45,
-                          label: "45 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          label: "All",
-                          step: "all",
-                        },
-                      ],
-                    },
-                  },
-                  yaxis: {
-                    fixedrange: true,
-                    title: "Accelerometer Z",
-                  },
-                }}
-                onRelayout={handleRelayout}
-                onClick={handleClickZ}
-              />
-            </div>
-            <div style={{ marginLeft: "420px" }}>
-              {buttonDisabled && (
-                <button
-                  className="btn btn-primary "
-                  style={{ display: "block" }}
-                  onClick={showTimeStartPopup}
-                >
-                  Select the Start Time
-                </button>
-              )}
-            </div>
-            <hr />
-            <div className="chart-container" id="chart2">
-              <Plot
-                ref={chart2Ref}
-                id="chart2"
-                data={[
-                  {
-                    x: timestamps,
-                    y: yValues,
-                    mode: "lines  ",
-                    marker: { color: "green" },
-                  },
-                ]}
-                layout={{
-                  title: "Accelerometer Y", // Set the fixed y-axis range
-                  width: 1000,
-                  height: 500,
-                  hovermode: "closest",
-                  dragmode: "pan",
-                  annotations: annotations,
-
-                  xaxis: {
-                    title: "Timestamp",
-                    type: "date",
-                    gridcolor: "lightgray", // Set the color of the grid lines
-                    gridwidth: 0.5,
-                    range: xRange,
-                    rangeslider: {
-                      visible: true,
-                      range: xRange,
-                    },
-                    tickformat: "%H:%M:%S:%L",
-                    rangeselector: {
-                      buttons: [
-                        {
-                          count: 5,
-                          label: "5 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 10,
-                          label: "10 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 15,
-                          label: "15 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 30,
-                          label: "30 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 45,
-                          label: "45 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          label: "All",
-                          step: "all",
-                        },
-                      ],
-                    },
-                  },
-                  yaxis: {
-                    title: "Accelerometer Y",
-                    fixedrange: true,
-                  },
-                }}
-                onRelayout={handleRelayout}
-                onClick={handleClickY}
-              />
-            </div>
-            <hr />
-            <div className="chart-container" id="chart1">
-              <Plot
-                ref={chart1Ref}
-                id="chart1"
-                data={[
-                  {
-                    x: timestamps,
-                    y: xValues,
-                    mode: "lines",
-                    marker: { color: "green" },
-                  },
-                ]}
-                layout={{
-                  title: "Accelerometer X",
-                  width: 1000,
-                  height: 500,
-                  hovermode: "closest",
-                  dragmode: "pan",
-                  gridwidth: 0.5,
-                  annotations: annotations,
-                  xaxis: {
-                    title: "Timestamp",
-                    type: "date",
-                    gridcolor: "lightgray",
-                    range: xRange,
-                    rangeslider: {
-                      visible: true,
-                      range: xRange,
-                    },
-                    tickformat: "%H:%M:%S.%L",
-                    rangeselector: {
-                      buttons: [
-                        {
-                          count: 5,
-                          label: "5 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 10,
-                          label: "10 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 15,
-                          label: "15 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 30,
-                          label: "30 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 45,
-                          label: "45 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          label: "All",
-                          step: "all",
-                        },
-                      ],
-                    },
-                  },
-                  yaxis: {
-                    title: "Accelerometer X",
-                    fixedrange: true,
-                  },
-                }}
-                onRelayout={handleRelayout}
-                onClick={handleClickX}
-              />
-
-              <div className="popup" id="timepopup" style={{ display: "none" }}>
-                <h3>Enter the Start Time</h3>
-                <input type="text" id="startTime-input" />
-                <button onClick={changeStartTime} className="buttonP">
-                  Submit
-                </button>
-                <button onClick={() => hidePopup(true)} className="buttonP">
-                  Close
-                </button>
-              </div>
-            </div>
-            <hr />
-            <div className="chart-container" id="chart4">
-              <Plot
-                ref={chart4Ref}
-                id="chart4"
-                data={[
-                  {
-                    x: timestamps,
-                    y: zGyroValues,
-                    mode: "lines  ",
-                    marker: { color: "green" },
-                  },
-                ]}
-                layout={{
-                  title: "Gyroscope Z", // Set the fixed y-axis range
-                  width: 1000,
-                  height: 500,
-                  hovermode: "closest",
-                  dragmode: "pan",
-                  annotations: annotations,
-
-                  xaxis: {
-                    title: "Timestamp",
-                    type: "date",
-                    gridcolor: "lightgray", // Set the color of the grid lines
-                    gridwidth: 0.5,
-                    range: xRange,
-                    rangeslider: {
-                      visible: true,
-                      range: xRange,
-                    },
-                    tickformat: "%H:%M:%S:%L",
-                    rangeselector: {
-                      buttons: [
-                        {
-                          count: 5,
-                          label: "5 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 10,
-                          label: "10 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 15,
-                          label: "15 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 30,
-                          label: "30 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 45,
-                          label: "45 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          label: "All",
-                          step: "all",
-                        },
-                      ],
-                    },
-                  },
-                  yaxis: {
-                    fixedrange: true,
-                    title: "Gyroscope Z",
-                  },
-                }}
-                onRelayout={handleRelayout}
-                onClick={handleClickGyroZ}
-              />
-            </div>
-            <hr />
-            <div className="chart-container" id="chart5">
-              <Plot
-                ref={chart5Ref}
-                id="chart5"
-                data={[
-                  {
-                    x: timestamps,
-                    y: yGyroValues,
-                    mode: "lines",
-                    marker: { color: "green" },
-                  },
-                ]}
-                layout={{
-                  title: "Gyroscope Y",
-                  width: 1000,
-                  height: 500,
-                  hovermode: "closest",
-                  dragmode: "pan",
-                  gridwidth: 0.5,
-                  annotations: annotations,
-                  xaxis: {
-                    title: "Timestamp",
-                    type: "date",
-                    gridcolor: "lightgray",
-                    range: xRange,
-                    rangeslider: {
-                      visible: true,
-                      range: xRange,
-                    },
-                    tickformat: "%H:%M:%S.%L",
-                    rangeselector: {
-                      buttons: [
-                        {
-                          count: 5,
-                          label: "5 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 10,
-                          label: "10 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 15,
-                          label: "15 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 30,
-                          label: "30 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 45,
-                          label: "45 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          label: "All",
-                          step: "all",
-                        },
-                      ],
-                    },
-                  },
-                  yaxis: {
-                    title: "Gyroscope Y",
-                    fixedrange: true,
-                  },
-                }}
-                onRelayout={handleRelayout}
-                onClick={handleClickGyroY}
-              />
-
-              <div className="popup" id="timepopup" style={{ display: "none" }}>
-                <h3>Enter the Start Time</h3>
-                <input type="text" id="startTime-input" />
-                <button onClick={changeStartTime} className="buttonP">
-                  Submit
-                </button>
-                <button onClick={() => hidePopup(true)} className="buttonP">
-                  Close
-                </button>
-              </div>
-            </div>
-            <hr />
-            <div className="chart-container" id="chart6">
-              <Plot
-                ref={chart6Ref}
-                id="chart6"
-                data={[
-                  {
-                    x: timestamps,
-                    y: xGyroValues,
-                    mode: "lines",
-                    marker: { color: "green" },
-                  },
-                ]}
-                layout={{
-                  title: "Gyroscope X",
-                  width: 1000,
-                  height: 500,
-                  hovermode: "closest",
-                  dragmode: "pan",
-                  gridwidth: 0.5,
-                  annotations: annotations,
-                  xaxis: {
-                    title: "Timestamp",
-                    type: "date",
-                    gridcolor: "lightgray",
-                    range: xRange,
-                    rangeslider: {
-                      visible: true,
-                      range: xRange,
-                    },
-                    tickformat: "%H:%M:%S.%L",
-                    rangeselector: {
-                      buttons: [
-                        {
-                          count: 5,
-                          label: "5 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 10,
-                          label: "10 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 15,
-                          label: "15 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 30,
-                          label: "30 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          count: 45,
-                          label: "45 sec",
-                          step: "second",
-                          stepmode: "backward",
-                        },
-                        {
-                          label: "All",
-                          step: "all",
-                        },
-                      ],
-                    },
-                  },
-                  yaxis: {
-                    title: "Gyroscope X",
-                    fixedrange: true,
-                  },
-                }}
-                onRelayout={handleRelayout}
-                onClick={handleClickGyroX}
-              />
-
-              <div className="popup" id="timepopup" style={{ display: "none" }}>
-                <h3>Enter the Start Time</h3>
-                <input type="text" id="startTime-input" />
-                <button onClick={changeStartTime} className="buttonP">
-                  Submit
-                </button>
-                <button onClick={() => hidePopup(true)} className="buttonP">
-                  Close
-                </button>
-              </div>
-            </div>
-            <hr />
-
-
+          <div className="d-flex justify-content-center my-5" style={{ marginLeft: "1%" }}>
+            {buttonDisabled && (
+              <button
+                className="btn btn-primary "
+                style={{ display: "block" }}
+                onClick={showTimeStartPopup}
+              >
+                Select the Start Time
+              </button>
+            )}
           </div>
+        </div>
+        {buttonDisabled && (
+          <div style={{ marginLeft: "38%", marginTop: "-1%" }}>
+            <label>Enter Timestamp  </label>
+            <input style={{ margin: "6px 1px 7px 12px" }} type="text" id="timestampInput" />
+            <button style={{ margin: "6px 1px 7px 15px" }} className="btn btn-primary" onClick={handleGoToTimestamp}>Go</button>
+          </div>)}
 
-          <div className="annotation-container">
-            <h2 className="text-center my-3">Output</h2>
-            <div id="tableContainer">
-              <table id="myTable">
-                <tbody>
-                  <tr>
-                    <th> S.No </th>
-                    <th>Axis</th>
-                    <th>Timestamp</th>
-                    <th>Value</th>
-                    <th>Annotation</th>
-                  </tr>
-                </tbody>
-              </table>
-              <div className="text-center my-5">
-                <button
-                  id="downloadBtn"
-                  onClick={downloadJson}
-                  className="buttonD "
-                >
-                  Download as JSON File
-                </button>
+        <div className="container " style={{ display: "block" }} >
+          <div style={{ width: "100%" }} className="main-charts">
+            <div style={{ width: "50%", float: "left" }}>
+              <div className="video-player-container">
+                {videoSource && (
+                  <div style={{ marginTop: "7%" }}>
+                    <video
+                      id="myVideo"
+                      ref={videoRef}
+                      onCanPlay={() => setPlayBack()}
+                      controls
+                      onTimeUpdate={(e) => videoTimeChange(e)}
+                      style={{
+                        width: "93%",
+                      }}
+                      playbackRate={playbackRate}
+                    >
+                      <source src={videoSource} type="video/mp4" />
+                    </video>
+                    <div style={{ position: 'relative', top: -60, left: 130, right: 0, bottom: 0, display: 'flex', alignItems: 'center' }}>
+                      <FontAwesomeIcon icon={faBackward} onClick={() => skip(-2)} style={{ cursor: 'pointer', marginRight: '10px', color: 'white' }} />
+                      <FontAwesomeIcon icon={faForward} onClick={() => skip(2)} style={{ cursor: 'pointer', color: 'white' }} />
+                    </div>
+                    <div class="center-container">
+                      <div >
+                        <span>Current Time in Video is   </span>{currentFormatTime}
+                      </div>
+                      <div >
+                        <div className="dropdown"><span>Set Playback Speed of Video:   </span>
+                          <select value={playbackRate} onChange={setPlaybackSpeed}>
+                            <option value="0.10">0.1x</option>
+                            <option value="0.2">0.2x</option>
+                            <option value="0.25">0.25x</option>
+                            <option value="0.5">0.5x</option>
+                            <option value="1" selected>1x</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
+              <br /><br />
+
+
+              <div className="annotation-container">
+                <h2 className="text-center my-3">Output</h2>
+                <div id="tableContainer">
+                  <table id="myTable">
+                    <tbody>
+                      <tr>
+                        <th> S.No </th>
+                        <th>Axis</th>
+                        <th>Timestamp</th>
+                        <th>Value</th>
+                        <th>Annotation</th>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div className="text-center my-5">
+                    <button
+                      id="downloadBtn"
+                      onClick={downloadCSV}
+                      className="buttonD "
+                    >
+                      Download as CSV File
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style={{ width: "50%", display: "flex", flexWrap: "wrap", justifyContent: "space-evenly" }}>
+              <div className="chart-container" id="chart3">
+                <Plot
+                  ref={chart3Ref}
+                  id="chart3"
+                  data={[
+                    {
+                      x: timestamps,
+                      y: zValues,
+                      mode: "lines  ",
+                      marker: { color: "green" },
+                    },
+                  ]}
+                  layout={{
+                    title: "Accelerometer Z", // Set the fixed y-axis range
+                    width: 700,
+                    height: 500,
+                    hovermode: "closest",
+                    dragmode: "pan",
+                    annotations: annotations,
+
+                    xaxis: {
+                      title: "Timestamp",
+                      type: "date",
+                      gridcolor: "lightgray", // Set the color of the grid lines
+                      gridwidth: 0.5,
+                      range: xRange,
+                      rangeslider: {
+                        visible: true,
+                        range: xRange,
+                      },
+                      tickformat: "%H:%M:%S:%L",
+                      rangeselector: {
+                        buttons: [
+                          {
+                            count: 5,
+                            label: "5 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 10,
+                            label: "10 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 15,
+                            label: "15 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 30,
+                            label: "30 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 45,
+                            label: "45 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            label: "All",
+                            step: "all",
+                          },
+                        ],
+                      },
+                    },
+                    yaxis: {
+                      fixedrange: true,
+                      title: "Accelerometer Z",
+                    },
+                    shapes: [{
+                      type: 'line',
+                      x0: xValue,
+                      y0: 0,
+                      x1: xValue,
+                      yref: 'paper',
+                      y1: 1,
+                      line: {
+                        color: 'grey',
+                        width: 1.5,
+                        dash: 'dot'
+                      }
+                    }],
+                  }}
+                  onRelayout={handleRelayout}
+                  onClick={handleClickZ}
+                />
+              </div>
+              <hr />
+              <div className="chart-container" id="chart2">
+                <Plot
+                  ref={chart2Ref}
+                  id="chart2"
+                  data={[
+                    {
+                      x: timestamps,
+                      y: yValues,
+                      mode: "lines  ",
+                      marker: { color: "green" },
+                    },
+                  ]}
+                  layout={{
+                    title: "Accelerometer Y", // Set the fixed y-axis range
+                    width: 700,
+                    height: 500,
+                    hovermode: "closest",
+                    dragmode: "pan",
+                    annotations: annotations,
+
+                    xaxis: {
+                      title: "Timestamp",
+                      type: "date",
+                      gridcolor: "lightgray", // Set the color of the grid lines
+                      gridwidth: 0.5,
+                      range: xRange,
+                      rangeslider: {
+                        visible: true,
+                        range: xRange,
+                      },
+                      tickformat: "%H:%M:%S:%L",
+                      rangeselector: {
+                        buttons: [
+                          {
+                            count: 5,
+                            label: "5 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 10,
+                            label: "10 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 15,
+                            label: "15 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 30,
+                            label: "30 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 45,
+                            label: "45 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            label: "All",
+                            step: "all",
+                          },
+                        ],
+                      },
+                    },
+                    yaxis: {
+                      title: "Accelerometer Y",
+                      fixedrange: true,
+                    },
+                    shapes: [{
+                      type: 'line',
+                      x0: xValue,
+                      y0: 0,
+                      x1: xValue,
+                      yref: 'paper',
+                      y1: 1,
+                      line: {
+                        color: 'grey',
+                        width: 1.5,
+                        dash: 'dot'
+                      }
+                    },]
+                  }}
+                  onRelayout={handleRelayout}
+                  onClick={handleClickY}
+                />
+              </div>
+              <hr />
+              <div className="chart-container" id="chart1">
+                <Plot
+                  ref={chart1Ref}
+                  id="chart1"
+                  data={[
+                    {
+                      x: timestamps,
+                      y: xValues,
+                      mode: "lines",
+                      marker: { color: "green" },
+                    },
+                  ]}
+                  layout={{
+                    title: "Accelerometer X",
+                    width: 700,
+                    height: 500,
+                    hovermode: "closest",
+                    dragmode: "pan",
+                    gridwidth: 0.5,
+                    annotations: annotations,
+                    xaxis: {
+                      title: "Timestamp",
+                      type: "date",
+                      gridcolor: "lightgray",
+                      range: xRange,
+                      rangeslider: {
+                        visible: true,
+                        range: xRange,
+                      },
+                      tickformat: "%H:%M:%S.%L",
+                      rangeselector: {
+                        buttons: [
+                          {
+                            count: 5,
+                            label: "5 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 10,
+                            label: "10 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 15,
+                            label: "15 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 30,
+                            label: "30 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 45,
+                            label: "45 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            label: "All",
+                            step: "all",
+                          },
+                        ],
+                      },
+                    },
+                    yaxis: {
+                      title: "Accelerometer X",
+                      fixedrange: true,
+                    },
+                    shapes: [{
+                      type: 'line',
+                      x0: xValue,
+                      y0: 0,
+                      x1: xValue,
+                      yref: 'paper',
+                      y1: 1,
+                      line: {
+                        color: 'grey',
+                        width: 1.5,
+                        dash: 'dot'
+                      }
+                    }]
+                  }}
+                  onRelayout={handleRelayout}
+                  onClick={handleClickX}
+                />
+
+                <div className="popup" id="timepopup" style={{ display: "none" }}>
+                  <h3>Enter the Start Time</h3>
+                  <input type="text" id="startTime-input" />
+                  <button onClick={changeStartTime} className="buttonP">
+                    Submit
+                  </button>
+                  <button onClick={() => hidePopup(true)} className="buttonP">
+                    Close
+                  </button>
+                </div>
+              </div>
+              <hr />
+              <div className="chart-container" id="chart4">
+                <Plot
+                  ref={chart4Ref}
+                  id="chart4"
+                  data={[
+                    {
+                      x: timestamps,
+                      y: zGyroValues,
+                      mode: "lines  ",
+                      marker: { color: "green" },
+                    },
+                  ]}
+                  layout={{
+                    title: "Gyroscope Z", // Set the fixed y-axis range
+                    width: 700
+                    ,
+                    height: 500,
+                    hovermode: "closest",
+                    dragmode: "pan",
+                    annotations: annotations,
+
+                    xaxis: {
+                      title: "Timestamp",
+                      type: "date",
+                      gridcolor: "lightgray", // Set the color of the grid lines
+                      gridwidth: 0.5,
+                      range: xRange,
+                      rangeslider: {
+                        visible: true,
+                        range: xRange,
+                      },
+                      tickformat: "%H:%M:%S:%L",
+                      rangeselector: {
+                        buttons: [
+                          {
+                            count: 5,
+                            label: "5 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 10,
+                            label: "10 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 15,
+                            label: "15 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 30,
+                            label: "30 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 45,
+                            label: "45 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            label: "All",
+                            step: "all",
+                          },
+                        ],
+                      },
+                    },
+                    yaxis: {
+                      fixedrange: true,
+                      title: "Gyroscope Z",
+                    },
+                    shapes: [{
+                      type: 'line',
+                      x0: xValue,
+                      y0: 0,
+                      x1: xValue,
+                      yref: 'paper',
+                      y1: 1,
+                      line: {
+                        color: 'grey',
+                        width: 1.5,
+                        dash: 'dot'
+                      }
+                    }]
+                  }}
+                  onRelayout={handleRelayout}
+                  onClick={handleClickGyroZ}
+                />
+              </div>
+              <hr />
+              <div className="chart-container" id="chart5">
+                <Plot
+                  ref={chart5Ref}
+                  id="chart5"
+                  data={[
+                    {
+                      x: timestamps,
+                      y: yGyroValues,
+                      mode: "lines",
+                      marker: { color: "green" },
+                    },
+                  ]}
+                  layout={{
+                    title: "Gyroscope Y",
+                    width: 700,
+                    height: 500,
+                    hovermode: "closest",
+                    dragmode: "pan",
+                    gridwidth: 0.5,
+                    annotations: annotations,
+                    xaxis: {
+                      title: "Timestamp",
+                      type: "date",
+                      gridcolor: "lightgray",
+                      range: xRange,
+                      rangeslider: {
+                        visible: true,
+                        range: xRange,
+                      },
+                      tickformat: "%H:%M:%S.%L",
+                      rangeselector: {
+                        buttons: [
+                          {
+                            count: 5,
+                            label: "5 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 10,
+                            label: "10 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 15,
+                            label: "15 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 30,
+                            label: "30 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 45,
+                            label: "45 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            label: "All",
+                            step: "all",
+                          },
+                        ],
+                      },
+                    },
+                    yaxis: {
+                      title: "Gyroscope Y",
+                      fixedrange: true,
+                    },
+                    shapes: [{
+                      type: 'line',
+                      x0: xValue,
+                      y0: 0,
+                      x1: xValue,
+                      yref: 'paper',
+                      y1: 1,
+                      line: {
+                        color: 'grey',
+                        width: 1.5,
+                        dash: 'dot'
+                      }
+                    }]
+                  }}
+                  onRelayout={handleRelayout}
+                  onClick={handleClickGyroY}
+                />
+
+                <div className="popup" id="timepopup" style={{ display: "none" }}>
+                  <h3>Enter the Start Time</h3>
+                  <input type="text" id="startTime-input" />
+                  <button onClick={changeStartTime} className="buttonP">
+                    Submit
+                  </button>
+                  <button onClick={() => hidePopup(true)} className="buttonP">
+                    Close
+                  </button>
+                </div>
+              </div>
+              <hr />
+              <div className="chart-container" id="chart6">
+                <Plot
+                  ref={chart6Ref}
+                  id="chart6"
+                  data={[
+                    {
+                      x: timestamps,
+                      y: xGyroValues,
+                      mode: "lines",
+                      marker: { color: "green" },
+                    },
+                  ]}
+                  layout={{
+                    title: "Gyroscope X",
+                    width: 700,
+                    height: 500,
+                    hovermode: "closest",
+                    dragmode: "pan",
+                    gridwidth: 0.5,
+                    annotations: annotations,
+                    xaxis: {
+                      title: "Timestamp",
+                      type: "date",
+                      gridcolor: "lightgray",
+                      range: xRange,
+                      rangeslider: {
+                        visible: true,
+                        range: xRange,
+                      },
+                      tickformat: "%H:%M:%S.%L",
+                      rangeselector: {
+                        buttons: [
+                          {
+                            count: 5,
+                            label: "5 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 10,
+                            label: "10 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 15,
+                            label: "15 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 30,
+                            label: "30 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            count: 45,
+                            label: "45 sec",
+                            step: "second",
+                            stepmode: "backward",
+                          },
+                          {
+                            label: "All",
+                            step: "all",
+                          },
+                        ],
+                      },
+                    },
+                    yaxis: {
+                      title: "Gyroscope X",
+                      fixedrange: true,
+                    },
+                    shapes: [{
+                      type: 'line',
+                      x0: xValue,
+                      y0: 0,
+                      x1: xValue,
+                      yref: 'paper',
+                      y1: 1,
+                      line: {
+                        color: 'grey',
+                        width: 1.5,
+                        dash: 'dot'
+                      }
+                    }]
+                  }}
+                  onRelayout={handleRelayout}
+                  onClick={handleClickGyroX}
+                />
+
+                <div className="popup" id="timepopup" style={{ display: "none" }}>
+                  <h3>Enter the Start Time</h3>
+                  <input type="text" id="startTime-input" />
+                  <button onClick={changeStartTime} className="buttonP">
+                    Submit
+                  </button>
+                  <button onClick={() => hidePopup(true)} className="buttonP">
+                    Close
+                  </button>
+                </div>
+              </div>
+              <hr />
             </div>
           </div>
         </div>

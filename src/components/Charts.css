@@ -133,3 +133,38 @@
   .buttonD:hover {
   background-color: #45a049;
   }
+
+  .dropdown {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .dropdown select {
+    padding: 0px 25px 0px 3px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    color: #333;
+    appearance: none;
+  }
+  
+  .dropdown::before {
+    content: '\25BC';
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    color: #007bff;
+    pointer-events: none;
+  }
+  
+  .dropdown select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+  }
+
+  /* .center-container {
+    text-align: center;
+  } */
