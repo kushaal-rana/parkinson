@@ -18,13 +18,8 @@ export default function ConvertFiles() {
       const formData = new FormData();
       formData.append("file", selectedFile);
       console.log("file",selectedFile);
-      debugger
-      // const requestData = {
-      //   fileName: "test.h5", // Replace with the actual file name
-      // };
-      // fetch("https://fhr-backend-3e6843936b75.herokuapp.com/execute-script", {
-      fetch("http://127.0.0.1:5000/execute-script", {
-      // fetch("http://161.35.62.90/execute-script/", {
+      // Use "http://127.0.0.1:5000/execute-script to run locally
+      fetch("https://parkinsons.compas.cs.stonybrook.edu/api/execute-script", {
         method: "POST",
         body: formData,
       })
@@ -44,9 +39,8 @@ export default function ConvertFiles() {
   const displayCSVContent = async (filename) => {
     try {
       const resp = await fetch(
-        // `https://parkinson-django-aa03ff498c72.herokuapp.com/get-csv/${filename}`
-        // `http://192.155.89.20:8000/get-csv/${filename}`
-        `http://127.0.0.1:5000/get-csv/${filename}`
+        // Use http://127.0.0.1:5000/get-csv/${filename} to run locally
+        `https://parkinsons.compas.cs.stonybrook.edu/api/get-csv/${filename}`
       );
       const data = await resp.json();
       setCSVContent(data.content);
@@ -67,7 +61,6 @@ export default function ConvertFiles() {
 
   const downloadJSON = (filename) => {
     filename.forEach((file) => {
-      debugger;
       displayCSVContent(file);
     });
   };
