@@ -15,7 +15,9 @@ export default function Charts() {
   const [zGyroValues, setzGyroValues] = useState([]);
   const [xRange, setXRange] = useState([]);
   const [xAnnotation, setXAnnotation] = useState();
-  const [yAnnotation, setYAnnotation] = useState();
+  const [yXAnnotation, setYXAnnotation] = useState();
+  const [yYAnnotation, setYYAnnotation] = useState();
+  const [yZAnnotation, setYZAnnotation] = useState();
   const [axis, setAxis] = useState();
   const [serial, setSerial] = useState(1);
   const [videoSource, setVideoSource] = useState(null);
@@ -124,9 +126,6 @@ export default function Charts() {
       serialCell.textContent = serial;
       row.appendChild(serialCell);
 
-      var axisCell = document.createElement("td");
-      axisCell.textContent = axis;
-      row.appendChild(axisCell);
 
       var xCell = document.createElement("td");
       const [datePart, timePart] = xAnnotation.split(" ");
@@ -137,9 +136,17 @@ export default function Charts() {
 
       row.appendChild(xCell);
 
-      var yCell = document.createElement("td");
-      yCell.textContent = yAnnotation.toFixed(3);
-      row.appendChild(yCell);
+      var yXCell = document.createElement("td");
+      yXCell.textContent = yXAnnotation.toFixed(3);
+      row.appendChild(yXCell);
+
+      var yYCell = document.createElement("td");
+      yYCell.textContent = yYAnnotation.toFixed(3);
+      row.appendChild(yYCell);
+
+      var yZCell = document.createElement("td");
+      yZCell.textContent = yZAnnotation.toFixed(3);
+      row.appendChild(yZCell);
 
       var aCell = document.createElement("td");
       aCell.textContent = annotation;
@@ -183,16 +190,16 @@ export default function Charts() {
     }
     hidePopup();
     setDisableClick(false);
-  }
+  }  
 
   const handleClickX = (event) => {
     if (!disableClick) {
       const x = event.points[0].x;
       const y = event.points[0].y;
       setXAnnotation(x);
-      setYAnnotation(y);
+      setYXAnnotation(y);
       showPopup("Acc-X", event.points[0].x, event.points[0].y);
-
+      const targetDate = new Date(x);
       const newAnnotation = {
         x,
         y,
@@ -205,6 +212,22 @@ export default function Charts() {
         arrowcolor: "blue",
         bgcolor: "black",
       };
+      if (chart1Ref.current) {
+        const plotDataY = chart2Ref.current.props?.data[0];
+        const plotDataZ = chart3Ref.current.props?.data[0];
+        const indexY = plotDataY.x.findIndex(dateStr => dateStr.getTime() === targetDate.getTime());
+        const indexZ = plotDataZ.x.findIndex(dateStr => dateStr.getTime() === targetDate.getTime());
+        if (indexY !== -1) {
+          setYYAnnotation(parseFloat(plotDataY.y[indexY]));
+        } else {
+          setYYAnnotation(0);
+        }
+        if (indexZ !== -1) {
+          setYZAnnotation(parseFloat(plotDataZ.y[indexZ]));
+        } else {
+          setYZAnnotation(0);
+        }
+      }
       setAnnotations((prevAnnotation) => [...prevAnnotation, newAnnotation]);
     }
   };
@@ -214,8 +237,9 @@ export default function Charts() {
       const x = event.points[0].x;
       const y = event.points[0].y;
       setXAnnotation(x);
-      setYAnnotation(y);
+      setYYAnnotation(y);
       showPopup("Acc-Y", event.points[0].x, event.points[0].y);
+      const targetDate = new Date(x);
       const newAnnotation = {
         x,
         y,
@@ -228,6 +252,22 @@ export default function Charts() {
         arrowcolor: "blue",
         bgcolor: "black",
       };
+      if (chart2Ref.current) {
+        const plotDataX = chart1Ref.current.props?.data[0];
+        const plotDataZ = chart3Ref.current.props?.data[0];
+        const indexX = plotDataX.x.findIndex(dateStr => dateStr.getTime() === targetDate.getTime());
+        const indexZ = plotDataZ.x.findIndex(dateStr => dateStr.getTime() === targetDate.getTime());
+        if (indexX !== -1) {
+          setYXAnnotation(parseFloat(plotDataX.y[indexX]));
+        } else {
+          setYXAnnotation(0);
+        }
+        if (indexZ !== -1) {
+          setYZAnnotation(parseFloat(plotDataZ.y[indexZ]));
+        } else {
+          setYZAnnotation(0);
+        }
+      }
       setAnnotations((prevAnnotation) => [...prevAnnotation, newAnnotation]);
     }
   };
@@ -237,8 +277,9 @@ export default function Charts() {
       const x = event.points[0].x;
       const y = event.points[0].y;
       setXAnnotation(x);
-      setYAnnotation(y);
+      setYZAnnotation(y);
       showPopup("Acc-Z", event.points[0].x, event.points[0].y);
+      const targetDate = new Date(x);
       const newAnnotation = {
         x,
         y,
@@ -251,6 +292,22 @@ export default function Charts() {
         arrowcolor: "blue",
         bgcolor: "black",
       };
+      if (chart3Ref.current) {
+        const plotDataX = chart1Ref.current.props?.data[0];
+        const plotDataY = chart2Ref.current.props?.data[0];
+        const indexX = plotDataX.x.findIndex(dateStr => dateStr.getTime() === targetDate.getTime());
+        const indexY = plotDataY.x.findIndex(dateStr => dateStr.getTime() === targetDate.getTime());
+        if (indexX !== -1) {
+          setYXAnnotation(parseFloat(plotDataX.y[indexX]));
+        } else {
+          setYXAnnotation(0);
+        }
+        if (indexY !== -1) {
+          setYYAnnotation(parseFloat(plotDataY.y[indexY]));
+        } else {
+          setYYAnnotation(0);
+        }
+      }
       setAnnotations((prevAnnotation) => [...prevAnnotation, newAnnotation]);
     }
   };
@@ -260,8 +317,9 @@ export default function Charts() {
       const x = event.points[0].x;
       const y = event.points[0].y;
       setXAnnotation(x);
-      setYAnnotation(y);
+      setYZAnnotation(y);
       showPopup("Gyro-Z", event.points[0].x, event.points[0].y);
+      const targetDate = new Date(x);
       const newAnnotation = {
         x,
         y,
@@ -274,6 +332,22 @@ export default function Charts() {
         arrowcolor: "blue",
         bgcolor: "black",
       };
+      if (chart4Ref.current) {
+        const plotDataX = chart6Ref.current.props?.data[0];
+        const plotDataY = chart5Ref.current.props?.data[0];
+        const indexX = plotDataX.x.findIndex(dateStr => dateStr.getTime() === targetDate.getTime());
+        const indexY = plotDataY.x.findIndex(dateStr => dateStr.getTime() === targetDate.getTime());
+        if (indexX !== -1) {
+          setYXAnnotation(parseFloat(plotDataX.y[indexX]));
+        } else {
+          setYXAnnotation(0);
+        }
+        if (indexY !== -1) {
+          setYYAnnotation(parseFloat(plotDataY.y[indexY]));
+        } else {
+          setYYAnnotation(0);
+        }
+      }
       setAnnotations((prevAnnotation) => [...prevAnnotation, newAnnotation]);
     }
   };
@@ -282,8 +356,9 @@ export default function Charts() {
       const x = event.points[0].x;
       const y = event.points[0].y;
       setXAnnotation(x);
-      setYAnnotation(y);
+      setYYAnnotation(y);
       showPopup("Gyro-Y", event.points[0].x, event.points[0].y);
+      const targetDate = new Date(x);
       const newAnnotation = {
         x,
         y,
@@ -296,6 +371,22 @@ export default function Charts() {
         arrowcolor: "blue",
         bgcolor: "black",
       };
+      if (chart5Ref.current) {
+        const plotDataX = chart6Ref.current.props?.data[0];
+        const plotDataZ = chart4Ref.current.props?.data[0];
+        const indexX = plotDataX.x.findIndex(dateStr => dateStr.getTime() === targetDate.getTime());
+        const indexZ = plotDataZ.x.findIndex(dateStr => dateStr.getTime() === targetDate.getTime());
+        if (indexX !== -1) {
+          setYXAnnotation(parseFloat(plotDataX.y[indexX]));
+        } else {
+          setYXAnnotation(0);
+        }
+        if (indexZ !== -1) {
+          setYZAnnotation(parseFloat(plotDataZ.y[indexZ]));
+        } else {
+          setYZAnnotation(0);
+        }
+      }
       setAnnotations((prevAnnotation) => [...prevAnnotation, newAnnotation]);
     }
   };
@@ -304,8 +395,9 @@ export default function Charts() {
       const x = event.points[0].x;
       const y = event.points[0].y;
       setXAnnotation(x);
-      setYAnnotation(y);
+      setYXAnnotation(y);
       showPopup("Gyro-X", event.points[0].x, event.points[0].y);
+      const targetDate = new Date(x);
       const newAnnotation = {
         x,
         y,
@@ -318,6 +410,22 @@ export default function Charts() {
         arrowcolor: "blue",
         bgcolor: "black",
       };
+      if (chart6Ref.current) {
+        const plotDataY = chart5Ref.current.props?.data[0];
+        const plotDataZ = chart4Ref.current.props?.data[0];
+        const indexY = plotDataY.x.findIndex(dateStr => dateStr.getTime() === targetDate.getTime());
+        const indexZ = plotDataZ.x.findIndex(dateStr => dateStr.getTime() === targetDate.getTime());
+        if (indexY !== -1) {
+          setYYAnnotation(parseFloat(plotDataY.y[indexY]));
+        } else {
+          setYYAnnotation(0);
+        }
+        if (indexZ !== -1) {
+          setYZAnnotation(parseFloat(plotDataZ.y[indexZ]));
+        } else {
+          setYZAnnotation(0);
+        }
+      }
       setAnnotations((prevAnnotation) => [...prevAnnotation, newAnnotation]);
     }
   };
@@ -373,14 +481,16 @@ export default function Charts() {
       document.querySelectorAll("#myTable tr:not(:first-child)")
     );
 
-    var csvData = "timestamp,value,annotation\n";
+    var csvData = "Timestamp,X Value,Y Value,Z Value,Annotation\n";
 
     // Iterate over the rows and extract the cell values
     rows?.forEach(function (row) {
       var rowData = [
+        row.cells[1].textContent,
         row.cells[2].textContent,
         row.cells[3].textContent,
         row.cells[4].textContent,
+        row.cells[5].textContent,
       ];
       csvData += rowData.join(",") + "\n";
     });
@@ -573,9 +683,10 @@ export default function Charts() {
                     <tbody>
                       <tr>
                         <th> S.No </th>
-                        <th>Axis</th>
                         <th>Timestamp</th>
-                        <th>Value</th>
+                        <th>X Value</th>
+                        <th>Y Value</th>
+                        <th>Z Value</th>
                         <th>Annotation</th>
                       </tr>
                     </tbody>
